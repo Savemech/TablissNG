@@ -1,5 +1,6 @@
 import { type BookmarkNode } from "./layout";
 import {
+  faviconCandidates,
   faviconPermissionOrigins,
   faviconTargets,
   type FaviconTarget,
@@ -13,6 +14,12 @@ const nodes: BookmarkNode[] = [
 ];
 
 describe("Speed Dial favicon policy", () => {
+  test("manual icons remain available for non-HTTP bookmarks", () => {
+    expect(
+      faviconCandidates(nodes).map(({ bookmarkId }) => bookmarkId),
+    ).toEqual(["public", "local", "special"]);
+  });
+
   test("direct fetching optionally includes local services", () => {
     expect(
       faviconTargets(nodes, { source: "direct", includeLocal: false }).map(

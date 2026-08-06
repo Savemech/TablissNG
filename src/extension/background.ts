@@ -25,9 +25,20 @@ async function handleFavicon(message: unknown): Promise<BackgroundResponse> {
   let pageUrl: URL;
   try {
     pageUrl = new URL(message.pageUrl);
-    if (!/^https?:$/.test(pageUrl.protocol)) throw new Error();
+    if (
+      message.source !== "manual-url" &&
+      !/^https?:$/.test(pageUrl.protocol)
+    ) {
+      throw new Error();
+    }
   } catch {
-    return { ok: false, error: "Only HTTP(S) bookmark URLs are supported" };
+    return {
+      ok: false,
+      error:
+        message.source === "manual-url"
+          ? "The bookmark URL is invalid"
+          : "Only HTTP(S) bookmark URLs are supported",
+    };
   }
 
   const existing = await getFavicon(message.bookmarkId);

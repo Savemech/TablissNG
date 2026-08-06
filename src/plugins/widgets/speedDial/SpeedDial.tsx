@@ -11,7 +11,12 @@ import {
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 
 import FaviconConsent from "./FaviconConsent";
-import { faviconTargets, requestFaviconPermissions } from "./faviconPolicy";
+import FaviconEditor from "./FaviconEditor";
+import {
+  faviconCandidates,
+  faviconTargets,
+  requestFaviconPermissions,
+} from "./faviconPolicy";
 import {
   type BookmarkNode,
   getFolderItems,
@@ -73,6 +78,11 @@ const messages = defineMessages({
     id: "plugins.speedDial.favicons.refreshPermissionError",
     defaultMessage: "Icon access was not granted.",
     description: "Favicon refresh permission denial",
+  },
+  editIcon: {
+    id: "plugins.speedDial.faviconEditor.open",
+    defaultMessage: "Change icon for {title}",
+    description: "Open manual tile icon editor button",
   },
 });
 
@@ -162,6 +172,7 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
   const [draggedId, setDraggedId] = useState<string>();
   const [dropTarget, setDropTarget] = useState<DropTarget>();
   const [faviconPermissionError, setFaviconPermissionError] = useState(false);
+  const [editedItemId, setEditedItemId] = useState<string>();
   const draggedIdRef = useRef<string | undefined>(undefined);
 
   const updateDraggedId = (itemId?: string) => {
@@ -181,12 +192,33 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     () => faviconTargets(bookmarkNodes, faviconSettings),
     [bookmarkNodes, faviconSettings.includeLocal, faviconSettings.source],
   );
+  const faviconCandidateList = useMemo(
+    () => faviconCandidates(bookmarkNodes),
+    [bookmarkNodes],
+  );
+  const faviconCandidateById = useMemo(
+    () =>
+      new Map(
+        faviconCandidateList.map((target) => [target.bookmarkId, target]),
+      ),
+    [faviconCandidateList],
+  );
+  const faviconTargetById = useMemo(
+    () =>
+      new Map(faviconTargetList.map((target) => [target.bookmarkId, target])),
+    [faviconTargetList],
+  );
   const {
     error: faviconError,
     fetching: fetchingFavicons,
     iconUrls,
+    records: faviconRecords,
     refreshAll: refreshFavicons,
-  } = useFavicons(faviconTargetList, faviconSettings);
+    refreshOne: refreshFavicon,
+    removeIcon,
+    setFromUpload,
+    setFromUrl,
+  } = useFavicons(faviconCandidateList, faviconSettings, faviconTargetList);
   const activePath = useMemo(() => {
     if (!tree || !bookmarkIndex) return [];
     if (path[0] !== tree.id) return [tree.id];
@@ -302,7 +334,15 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     );
   }
 
-  if (!tree || !currentFolderId || !currentFolder) return null;
+  if (!tree || !bookmarkIndex || !currentFolderId || !currentFolder)
+    return null;
+
+  const editedNode = editedItemId
+    ? bookmarkIndex.nodes.get(editedItemId)
+    : undefined;
+  const editedTarget = editedItemId
+    ? faviconCandidateById.get(editedItemId)
+    : undefined;
 
   const style = {
     "--speed-dial-icon-size": `${data.tileSize}px`,
@@ -379,6 +419,7 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
           const target =
             dropTarget?.itemId === item.id ? dropTarget.mode : null;
           const faviconUrl = iconUrls.get(item.id);
+          const faviconCandidate = faviconCandidateById.get(item.id);
 
           return (
             <div
@@ -393,6 +434,26 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
               onDragOver={(event) => handleTileDragOver(event, item)}
               onDrop={(event) => handleTileDrop(event, item)}
             >
+              {!folder && faviconCandidate && (
+                <button
+                  type="button"
+                  className="SpeedDial__edit-icon"
+                  draggable={false}
+                  aria-label={intl.formatMessage(messages.editIcon, { title })}
+                  title={intl.formatMessage(messages.editIcon, { title })}
+                  onDragStart={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setEditedItemId(item.id);
+                  }}
+                >
+                  ⋯
+                </button>
+              )}
               {folder ? (
                 <button
                   type="button"
@@ -440,6 +501,22 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
           nodes={bookmarkNodes}
           settings={faviconSettings}
           onChange={(favicons) => setData({ ...data, favicons })}
+        />
+      )}
+
+      {editedItemId && editedNode && editedTarget && (
+        <FaviconEditor
+          title={titleFor(editedNode)}
+          target={editedTarget}
+          automaticTarget={faviconTargetById.get(editedItemId)}
+          settings={faviconSettings}
+          iconUrl={iconUrls.get(editedItemId)}
+          record={faviconRecords.get(editedItemId)}
+          onClose={() => setEditedItemId(undefined)}
+          onManualUrl={setFromUrl}
+          onUpload={setFromUpload}
+          onRemove={removeIcon}
+          onRefreshAutomatic={refreshFavicon}
         />
       )}
     </section>

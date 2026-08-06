@@ -8,6 +8,17 @@ import type { FaviconSettings } from "./types";
 
 export type FaviconTarget = { bookmarkId: string; pageUrl: string };
 
+/** Every bookmark that can carry a locally stored manual icon. */
+export function faviconCandidates(
+  nodes: Iterable<BookmarkNode>,
+): FaviconTarget[] {
+  const targets: FaviconTarget[] = [];
+  for (const node of nodes) {
+    if (node.url) targets.push({ bookmarkId: node.id, pageUrl: node.url });
+  }
+  return targets;
+}
+
 export function faviconTargets(
   nodes: Iterable<BookmarkNode>,
   settings: Pick<FaviconSettings, "source" | "includeLocal">,
@@ -48,4 +59,12 @@ export async function requestFaviconPermissions(
   const origins = faviconPermissionOrigins(targets, source);
   if (origins.length === 0) return true;
   return browser.permissions.request({ origins });
+}
+
+export async function requestManualIconPermission(
+  iconUrl: string,
+): Promise<boolean> {
+  const origin = permissionOriginForUrl(iconUrl);
+  if (!origin) return false;
+  return browser.permissions.request({ origins: [origin] });
 }

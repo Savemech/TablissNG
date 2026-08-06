@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { deleteFavicon, getFavicons } from "../../../extension/favicon/store";
+import {
+  deleteFavicon,
+  getFavicons,
+  putFavicon,
+} from "../../../extension/favicon/store";
 import type { FaviconRecord } from "../../../extension/favicon/types";
 import {
   type BackgroundResponse,
@@ -17,11 +21,17 @@ type FaviconState = {
   records: ReadonlyMap<string, FaviconRecord>;
   refreshAll: (force?: boolean) => Promise<BackgroundResponse>;
   refreshOne: (target: FaviconTarget) => Promise<BackgroundResponse>;
+  setFromUrl: (
+    target: FaviconTarget,
+    iconUrl: string,
+  ) => Promise<BackgroundResponse>;
+  setFromUpload: (target: FaviconTarget, file: File) => Promise<void>;
   removeIcon: (bookmarkId: string) => Promise<void>;
   reload: () => Promise<void>;
 };
 
 const BATCH_SIZE = 500;
+export const MAX_MANUAL_ICON_BYTES = 512 * 1024;
 
 function asError(cause: unknown): Error {
   return cause instanceof Error ? cause : new Error("Could not update icons");
@@ -35,9 +45,25 @@ function canonicalUrl(value: string): string {
   }
 }
 
+async function ensureRenderableImage(blob: Blob): Promise<void> {
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve();
+      image.onerror = () =>
+        reject(new Error("The selected file cannot be decoded"));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export function useFavicons(
   targets: readonly FaviconTarget[],
   settings: FaviconSettings,
+  automaticTargets: readonly FaviconTarget[] = targets,
 ): FaviconState {
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<Error>();
@@ -50,8 +76,13 @@ export function useFavicons(
   const objectUrlsRef = useRef<string[]>([]);
   const automaticRequestRef = useRef<string | undefined>(undefined);
   const targetsRef = useRef(targets);
+  const automaticTargetsRef = useRef(automaticTargets);
   targetsRef.current = targets;
+  automaticTargetsRef.current = automaticTargets;
   const targetsKey = targets
+    .map(({ bookmarkId, pageUrl }) => `${bookmarkId}\u0000${pageUrl}`)
+    .join("\u0001");
+  const automaticTargetsKey = automaticTargets
     .map(({ bookmarkId, pageUrl }) => `${bookmarkId}\u0000${pageUrl}`)
     .join("\u0001");
 
@@ -101,12 +132,12 @@ export function useFavicons(
         let failed = 0;
         for (
           let index = 0;
-          index < targetsRef.current.length;
+          index < automaticTargetsRef.current.length;
           index += BATCH_SIZE
         ) {
           const response = (await browser.runtime.sendMessage({
             type: FETCH_FAVICON_BATCH,
-            items: targetsRef.current.slice(index, index + BATCH_SIZE),
+            items: automaticTargetsRef.current.slice(index, index + BATCH_SIZE),
             source: settings.source,
             ttlDays: settings.ttlDays,
             concurrency: settings.concurrency,
@@ -158,6 +189,63 @@ export function useFavicons(
     [reload, settings.source, settings.ttlDays],
   );
 
+  const setFromUrl = useCallback(
+    async (
+      target: FaviconTarget,
+      iconUrl: string,
+    ): Promise<BackgroundResponse> => {
+      setError(undefined);
+      try {
+        const response = (await browser.runtime.sendMessage({
+          type: FETCH_FAVICON,
+          bookmarkId: target.bookmarkId,
+          pageUrl: target.pageUrl,
+          source: "manual-url",
+          manualUrl: iconUrl,
+          ttlDays: settings.ttlDays,
+          force: true,
+        })) as BackgroundResponse;
+        if (!response?.ok) {
+          throw new Error(response?.error ?? "Could not fetch the custom icon");
+        }
+        await reload();
+        return response;
+      } catch (cause) {
+        const nextError = asError(cause);
+        setError(nextError);
+        return { ok: false, error: nextError.message };
+      }
+    },
+    [reload, settings.ttlDays],
+  );
+
+  const setFromUpload = useCallback(
+    async (target: FaviconTarget, file: File): Promise<void> => {
+      if (!file.size || file.size > MAX_MANUAL_ICON_BYTES) {
+        throw new Error("The icon must be between 1 byte and 512 KiB");
+      }
+      if (
+        file.type &&
+        !file.type.startsWith("image/") &&
+        file.type !== "application/octet-stream"
+      ) {
+        throw new Error("The selected file is not an image");
+      }
+      await ensureRenderableImage(file);
+      await putFavicon({
+        bookmarkId: target.bookmarkId,
+        pageUrl: canonicalUrl(target.pageUrl),
+        source: "manual-upload",
+        sourceUrl: file.name,
+        status: "ready",
+        blob: file.slice(0, file.size, file.type || "application/octet-stream"),
+        fetchedAt: Date.now(),
+      });
+      await reload();
+    },
+    [reload],
+  );
+
   const removeIcon = useCallback(
     async (bookmarkId: string): Promise<void> => {
       await deleteFavicon(bookmarkId);
@@ -181,12 +269,12 @@ export function useFavicons(
   }, [replaceRecords, targetsKey]);
 
   useEffect(() => {
-    if (settings.consent !== "enabled" || targets.length === 0) return;
+    if (settings.consent !== "enabled" || automaticTargets.length === 0) return;
     const requestKey = [
       settings.source,
       settings.ttlDays,
       settings.concurrency,
-      targetsKey,
+      automaticTargetsKey,
     ].join("\u0002");
     if (automaticRequestRef.current === requestKey) return;
     automaticRequestRef.current = requestKey;
@@ -197,8 +285,8 @@ export function useFavicons(
     settings.consent,
     settings.source,
     settings.ttlDays,
-    targets.length,
-    targetsKey,
+    automaticTargets.length,
+    automaticTargetsKey,
   ]);
 
   useEffect(
@@ -216,6 +304,8 @@ export function useFavicons(
     records,
     refreshAll,
     refreshOne,
+    setFromUrl,
+    setFromUpload,
     removeIcon,
     reload,
   };

@@ -181,9 +181,16 @@ test("Speed Dial works in the installed Chromium extension", async () => {
     await page.waitForTimeout(1_100);
 
     let uiIconRequests = 0;
+    let manualIconRequests = 0;
     const uiIconServer = createServer((request, response) => {
       if (request.url === "/favicon.ico") {
         uiIconRequests += 1;
+        response.writeHead(200, { "content-type": "image/png" });
+        response.end(icon);
+        return;
+      }
+      if (request.url === "/manual.png") {
+        manualIconRequests += 1;
         response.writeHead(200, { "content-type": "image/png" });
         response.end(icon);
         return;
@@ -200,11 +207,11 @@ test("Speed Dial works in the installed Chromium extension", async () => {
         throw new Error("Could not start the UI favicon fixture server");
       }
       const localUrl = `http://127.0.0.1:${address.port}/dashboard`;
-      await page.evaluate(async (url) => {
+      const localBookmarkId = await page.evaluate(async (url) => {
         const root = await chrome.bookmarks.create({
           title: "E2E Favicon Consent",
         });
-        await chrome.bookmarks.create({
+        const bookmark = await chrome.bookmarks.create({
           parentId: root.id,
           title: "Local Dashboard",
           url,
@@ -226,6 +233,7 @@ test("Speed Dial works in the installed Chromium extension", async () => {
             },
           },
         });
+        return bookmark.id;
       }, localUrl);
       await page.setViewportSize({ width: 800, height: 720 });
       await page.reload();
@@ -236,6 +244,48 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       await page.getByRole("button", { name: "Allow and fetch icons" }).click();
       await expect(page.locator(".SpeedDial__favicon")).toHaveCount(1);
       expect(uiIconRequests).toBe(1);
+
+      const storedSource = () =>
+        page.evaluate(
+          (bookmarkId) =>
+            new Promise<string | undefined>((resolve, reject) => {
+              const open = indexedDB.open("fdial/assets", 1);
+              open.onerror = () => reject(open.error);
+              open.onsuccess = () => {
+                const request = open.result
+                  .transaction("favicons", "readonly")
+                  .objectStore("favicons")
+                  .get(bookmarkId);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result?.source);
+              };
+            }),
+          localBookmarkId,
+        );
+
+      const editIcon = page.getByRole("button", {
+        name: "Change icon for Local Dashboard",
+      });
+      await editIcon.click();
+      await page.locator('input[type="file"]').setInputFiles({
+        name: "custom.png",
+        mimeType: "image/png",
+        buffer: icon,
+      });
+      await expect.poll(storedSource).toBe("manual-upload");
+
+      await editIcon.click();
+      await page
+        .getByRole("textbox", { name: "Image URL" })
+        .fill(`http://127.0.0.1:${address.port}/manual.png`);
+      await page.getByRole("button", { name: "Fetch this image" }).click();
+      await expect.poll(storedSource).toBe("manual-url");
+      expect(manualIconRequests).toBe(1);
+
+      await editIcon.click();
+      await page.getByRole("button", { name: "Reset icon" }).click();
+      await expect.poll(storedSource).toBe("direct");
+      expect(uiIconRequests).toBe(2);
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),

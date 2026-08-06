@@ -128,6 +128,32 @@
       outline: 2px solid currentColor
       background: rgba(255, 255, 255, 0.18)
 
+    &:hover, &:focus-within
+      .SpeedDial__edit-icon
+        opacity: 1
+
+  &__edit-icon
+    position: absolute
+    z-index: 3
+    top: 0.1rem
+    right: 0.1rem
+    width: 1.45rem
+    height: 1.45rem
+    padding: 0
+    border: 0
+    border-radius: 50%
+    color: inherit
+    background: rgba(0, 0, 0, 0.42)
+    font-size: 1.05rem
+    line-height: 1
+    opacity: 0
+    cursor: pointer
+    transition: opacity 120ms ease, background-color 120ms ease
+
+    &:hover, &:focus-visible
+      opacity: 1
+      background: rgba(0, 0, 0, 0.68)
+
   &__link
     box-sizing: border-box
     width: 100%
@@ -238,8 +264,17 @@
       gap: 0.9rem
       margin-top: 0.85rem
 
-    select, input[type="range"]
+    select, input[type="range"], input[type="url"]
       min-width: 10rem
+
+    input[type="url"], input[type="file"]
+      box-sizing: border-box
+      width: min(17rem, 60vw)
+      padding: 0.45rem
+      border: 1px solid rgba(255, 255, 255, 0.22)
+      border-radius: 0.5rem
+      color: inherit
+      background: #2d3447
 
     select, button
       padding: 0.5rem 0.65rem
@@ -273,6 +308,19 @@
     gap: 0.65rem
     margin-top: 1.1rem
 
+  &__editor-preview
+    width: 5rem
+    height: 5rem
+    display: block
+    margin: 0.5rem auto 1rem
+    border-radius: 22%
+    object-fit: contain
+    filter: drop-shadow(0 0.3rem 0.5rem rgba(0, 0, 0, 0.35))
+
+  &__editor-upload
+    align-items: flex-start !important
+    flex-direction: column
+
 @keyframes speed-dial-spin
   to
     transform: rotate(360deg)
@@ -283,3 +331,7 @@
 
   .SpeedDial__loading
     animation-duration: 1.8s
+
+@media (hover: none)
+  .SpeedDial__edit-icon
+    opacity: 0.8
