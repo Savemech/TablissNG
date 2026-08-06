@@ -126,10 +126,10 @@ export type WidgetPosition =
 // Init data for the store
 const initData: State = {
   background: {
-    // Keep first launch fully offline. Network-backed galleries remain
-    // available, but must be an explicit user choice.
-    id: "default-gradient",
-    key: "background/gradient",
+    // Keep first launch fully offline and time-aware. Network-backed
+    // galleries remain available, but must be an explicit user choice.
+    id: "default-daypart",
+    key: "background/daypart",
     display: {
       autoTextContrast: true,
       autoTextOutline: true,
