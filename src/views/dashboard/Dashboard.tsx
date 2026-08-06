@@ -1,6 +1,6 @@
 import "./Dashboard.sass";
 
-import { type CSSProperties, type FC, memo } from "react";
+import { type CSSProperties, type FC, lazy, memo, Suspense } from "react";
 
 import {
   contrastForLuminance,
@@ -12,6 +12,8 @@ import { useKey } from "../../lib/db/react";
 import Background from "./Background";
 import Overlay from "./Overlay";
 import Widgets from "./Widgets";
+
+const LocalFontRegistry = lazy(() => import("../../fonts/LocalFontRegistry"));
 
 const Dashboard: FC = () => {
   const { isDark } = useTheme();
@@ -32,6 +34,9 @@ const Dashboard: FC = () => {
       }
     >
       <Background />
+      <Suspense fallback={null}>
+        <LocalFontRegistry />
+      </Suspense>
       <Widgets />
       <Overlay />
     </div>
