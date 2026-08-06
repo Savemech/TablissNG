@@ -138,30 +138,42 @@ export const toggleFocus = () => {
 
 // Store actions
 
-/** Import database from a dump */
-export const importStore = (dump: any): void => {
-  // TODO: Add proper schema validation
+function normaliseStoreDump(dump: unknown): Record<string, unknown> {
   if (typeof dump !== "object" || dump === null)
     throw new TypeError("Unexpected format");
+  const record = dump as Record<string, unknown>;
 
-  resetStore();
-  if ("backgrounds" in dump) {
+  if ("backgrounds" in record) {
     // Version 2 config
-    DB.put(db, `widget/default-time`, null);
-    DB.put(db, `widget/default-greeting`, null);
-    dump = migrateFrom2(dump);
-  } else if (dump.version === 3) {
+    return migrateFrom2(dump as Parameters<typeof migrateFrom2>[0]);
+  } else if (record.version === 3) {
     // Version 3 config
-    delete dump.version;
-  } else if (dump.version > 3) {
+    const { version: _version, ...state } = record;
+    return state;
+  } else if (typeof record.version === "number" && record.version > 3) {
     // Future version
     throw new TypeError("Settings exported from a newer version of Tabliss");
   } else {
     // Unknown version
     throw new TypeError("Unknown settings version");
   }
+}
+
+/** Validate without touching live settings (used before an asset restore). */
+export const validateStoreDump = (dump: unknown): void => {
+  normaliseStoreDump(dump);
+};
+
+/** Import database from a dump. Invalid data never clears the live store. */
+export const importStore = (dump: unknown): void => {
+  const state = normaliseStoreDump(dump);
+  resetStore();
+  if ("backgrounds" in (dump as object)) {
+    DB.put(db, `widget/default-time`, null);
+    DB.put(db, `widget/default-greeting`, null);
+  }
   // @ts-ignore
-  Object.entries(dump).forEach(([key, val]) => DB.put(db, key, val));
+  Object.entries(state).forEach(([key, val]) => DB.put(db, key, val));
 };
 
 /** Export a database dump */

@@ -57,7 +57,7 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
   });
 }
 
-function announceChange(): void {
+export function announceFontLibraryChange(): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(FONT_LIBRARY_CHANGED_EVENT));
   }
@@ -108,7 +108,7 @@ export async function addLocalFont(file: File): Promise<LocalFontRecord> {
   const transaction = database.transaction(STORE_NAME, "readwrite");
   transaction.objectStore(STORE_NAME).put(record);
   await transactionDone(transaction);
-  announceChange();
+  announceFontLibraryChange();
   return record;
 }
 
@@ -117,5 +117,58 @@ export async function removeLocalFont(id: string): Promise<void> {
   const transaction = database.transaction(STORE_NAME, "readwrite");
   transaction.objectStore(STORE_NAME).delete(id);
   await transactionDone(transaction);
-  announceChange();
+  announceFontLibraryChange();
+}
+
+export async function clearLocalFonts(): Promise<void> {
+  const database = await openDatabase();
+  const transaction = database.transaction(STORE_NAME, "readwrite");
+  transaction.objectStore(STORE_NAME).clear();
+  await transactionDone(transaction);
+  announceFontLibraryChange();
+}
+
+/** Import a validated record while preserving the id referenced by widgets. */
+export async function importLocalFont(
+  input: LocalFontRecord,
+): Promise<LocalFontRecord> {
+  if (
+    !/^[a-z0-9]{3,32}$/.test(input.id) ||
+    input.family !== localFontFamily(input.id)
+  ) {
+    throw new LocalFontError("invalid-type");
+  }
+  const file = new File([input.blob], input.fileName, {
+    type: input.mimeType,
+  });
+  const validation = validateLocalFont(file);
+  if (validation) throw new LocalFontError(validation);
+
+  const existing = await listLocalFonts();
+  if (
+    !existing.some(({ id }) => id === input.id) &&
+    existing.length >= MAX_LOCAL_FONTS
+  ) {
+    throw new LocalFontError("too-many");
+  }
+  const record: LocalFontRecord = {
+    id: input.id,
+    family: localFontFamily(input.id),
+    name:
+      input.name.trim().slice(0, 100) || fontNameFromFileName(input.fileName),
+    fileName: input.fileName.slice(0, 160),
+    mimeType: fontMimeType(input.fileName, input.mimeType),
+    blob: input.blob.slice(
+      0,
+      input.blob.size,
+      fontMimeType(input.fileName, input.mimeType),
+    ),
+    createdAt: Number.isFinite(input.createdAt) ? input.createdAt : Date.now(),
+  };
+  const database = await openDatabase();
+  const transaction = database.transaction(STORE_NAME, "readwrite");
+  transaction.objectStore(STORE_NAME).put(record);
+  await transactionDone(transaction);
+  announceFontLibraryChange();
+  return record;
 }

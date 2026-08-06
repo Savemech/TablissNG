@@ -19,3 +19,12 @@ export type FaviconStoreStats = {
   ready: number;
   bytes: number;
 };
+
+export type PortableFaviconAsset = {
+  portableKey: string;
+  pageUrl: string;
+  source: "manual-url" | "manual-upload";
+  sourceUrl?: string;
+  blob: Blob;
+  updatedAt: number;
+};

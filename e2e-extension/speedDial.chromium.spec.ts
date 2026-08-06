@@ -91,7 +91,7 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       const cachedIcon = await page.evaluate(
         (bookmarkId) =>
           new Promise<{ size: number; status: string }>((resolve, reject) => {
-            const open = indexedDB.open("fdial/assets", 1);
+            const open = indexedDB.open("fdial/assets");
             open.onerror = () => reject(open.error);
             open.onsuccess = () => {
               const request = open.result
@@ -302,7 +302,7 @@ test("Speed Dial works in the installed Chromium extension", async () => {
         page.evaluate(
           (bookmarkId) =>
             new Promise<string | undefined>((resolve, reject) => {
-              const open = indexedDB.open("fdial/assets", 1);
+              const open = indexedDB.open("fdial/assets");
               open.onerror = () => reject(open.error);
               open.onsuccess = () => {
                 const request = open.result
@@ -628,8 +628,75 @@ test("Speed Dial works in the installed Chromium extension", async () => {
             "not-a-real-font-but-valid-local-storage-fixture",
           ),
         });
-      await fontPicker.getByRole("button", { name: "Remove" }).click();
-      await expect(fontPicker.locator("select")).toHaveValue("");
+      const localFontFamily = await fontPicker.locator("select").inputValue();
+
+      // A portable backup carries original custom assets across browser
+      // vendors, where native account sync cannot help.
+      await page.keyboard.press("Escape");
+      await editIcon.click();
+      await page.locator('input[type="file"]').setInputFiles({
+        name: "backup-icon.png",
+        mimeType: "image/png",
+        buffer: icon,
+      });
+      await expect.poll(storedSource).toBe("manual-upload");
+
+      await openSettings(page);
+      const downloadPromise = page.waitForEvent("download");
+      await page
+        .locator(".Settings a")
+        .filter({ hasText: /^export$/i })
+        .click();
+      const download = await downloadPromise;
+      const backupPath = await download.path();
+      expect(backupPath).toBeTruthy();
+
+      await page.keyboard.press("Escape");
+      await editIcon.click();
+      await page.getByRole("button", { name: "Reset icon" }).click();
+      await expect.poll(storedSource).toBe("direct");
+
+      await openSettings(page);
+      const restoredTimeSettings = page.locator(".Settings fieldset.Widget", {
+        has: page.locator("h4", { hasText: /^Time$/ }),
+      });
+      await restoredTimeSettings.locator("h4").click();
+      await restoredTimeSettings
+        .getByText("Open Font Settings", { exact: true })
+        .click();
+      const restoredFontPicker =
+        restoredTimeSettings.locator(".FontFamilyPicker");
+      await restoredFontPicker.getByRole("button", { name: "Remove" }).click();
+      await expect(restoredFontPicker.locator("select")).toHaveValue("");
+
+      const chooserPromise = page.waitForEvent("filechooser");
+      await page
+        .locator(".Settings a")
+        .filter({ hasText: /^import$/i })
+        .click();
+      const chooser = await chooserPromise;
+      await chooser.setFiles(backupPath!);
+      await expect.poll(storedSource).toBe("manual-upload");
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              new Promise<number>((resolve, reject) => {
+                const open = indexedDB.open("fdial/fonts");
+                open.onerror = () => reject(open.error);
+                open.onsuccess = () => {
+                  const request = open.result
+                    .transaction("fonts", "readonly")
+                    .objectStore("fonts")
+                    .count();
+                  request.onerror = () => reject(request.error);
+                  request.onsuccess = () => resolve(request.result);
+                };
+              }),
+          ),
+        )
+        .toBe(1);
+      await expect(timeWidget).toHaveCSS("font-family", localFontFamily);
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),

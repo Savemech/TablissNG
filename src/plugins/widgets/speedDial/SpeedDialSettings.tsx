@@ -420,6 +420,14 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
           </p>
         )}
 
+        <p className="info">
+          <FormattedMessage
+            id="plugins.speedDial.settings.favicons.syncInfo"
+            defaultMessage="Custom icons sync in a quota-safe compressed form (up to 48 KiB total). Portable backup keeps the local originals for Chrome ↔ Firefox migration."
+            description="Favicon sync and portable backup explanation"
+          />
+        </p>
+
         {faviconError && (
           <p className="SpeedDialSettings__error" role="status">
             {faviconError}

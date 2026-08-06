@@ -6,8 +6,13 @@ import { type FC, memo, useContext, useMemo } from "react";
 import GitHubButton from "react-github-btn";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 
+import {
+  exportPortableBackup,
+  importPortableBackup,
+  MAX_BACKUP_FILE_BYTES,
+} from "../../backup/portableBackup";
 import { UiContext } from "../../contexts/ui";
-import { exportStore, importStore, resetStore } from "../../db/action";
+import { resetStore } from "../../db/action";
 import { db } from "../../db/state";
 import { useClipboard, useKeyPress } from "../../hooks";
 import { useTheme } from "../../hooks";
@@ -90,6 +95,7 @@ const Settings: FC = () => {
   const intl = useIntl();
   const [isHovered, setIsHovered] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [transferWorking, setTransferWorking] = useState(false);
   const planeRef = useRef<HTMLDivElement>(null);
   const { copy, copied } = useClipboard();
 
@@ -119,49 +125,61 @@ const Settings: FC = () => {
     if (confirm(intl.formatMessage(messages.resetConfirm))) resetStore();
   };
 
-  const handleExport = () => {
-    const json = exportStore();
-    const url = URL.createObjectURL(
-      new Blob([json], { type: "application/json" }),
-    );
-
-    const a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style.display = "none";
-    a.href = url;
-    a.download = "tablissng.json";
-    a.download = "tablissng.json";
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+  const handleExport = async () => {
+    if (transferWorking) return;
+    setTransferWorking(true);
+    try {
+      const json = await exportPortableBackup();
+      const url = URL.createObjectURL(
+        new Blob([json], { type: "application/json" }),
+      );
+      const anchor = document.createElement("a");
+      document.body.appendChild(anchor);
+      anchor.style.display = "none";
+      anchor.href = url;
+      anchor.download = `fdial-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(anchor);
+    } catch (error) {
+      alert(
+        `Could not export backup: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setTransferWorking(false);
+    }
   };
 
   const handleImport = () => {
+    if (transferWorking) return;
     const input = document.createElement("input");
     document.body.appendChild(input);
     input.style.display = "none";
     input.type = "file";
-    input.addEventListener("change", function () {
-      if (this.files) {
-        const file = this.files[0];
-        const reader = new FileReader();
-        reader.addEventListener("load", (event) => {
-          if (event.target && event.target.result) {
-            try {
-              const state = JSON.parse(event.target.result as string);
-              importStore(state);
-            } catch (error) {
-              alert(
-                `Invalid import file: ${
-                  error instanceof Error ? error.message : "Unknown error"
-                }`,
-              );
-            }
-          }
-        });
-        reader.readAsText(file);
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
       }
-      document.body.removeChild(input);
+      setTransferWorking(true);
+      try {
+        if (file.size > MAX_BACKUP_FILE_BYTES) {
+          throw new Error("Backup file is too large");
+        }
+        await importPortableBackup(JSON.parse(await file.text()) as unknown);
+      } catch (error) {
+        alert(
+          `Invalid import file: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
+      } finally {
+        setTransferWorking(false);
+        document.body.removeChild(input);
+      }
     });
     input.click();
   };
@@ -242,11 +260,30 @@ const Settings: FC = () => {
           <FormattedMessage
             {...messages.settingsImportExportReset}
             values={{
-              import: (chunks) => <a onClick={handleImport}>{chunks}</a>,
-              export: (chunks) => <a onClick={handleExport}>{chunks}</a>,
+              import: (chunks) => (
+                <a aria-disabled={transferWorking} onClick={handleImport}>
+                  {chunks}
+                </a>
+              ),
+              export: (chunks) => (
+                <a
+                  aria-disabled={transferWorking}
+                  onClick={() => void handleExport()}
+                >
+                  {chunks}
+                </a>
+              ),
               reset: (chunks) => <a onClick={handleReset}>{chunks}</a>,
             }}
           />
+          <br />
+          <small className="info">
+            <FormattedMessage
+              id="settings.portableBackup.description"
+              defaultMessage="Portable backup includes settings, Speed Dial order, custom icon originals and uploaded fonts. Browser account sync works only within Chrome or within Firefox; use this file to move between them."
+              description="Portable backup contents and cross-browser limitation"
+            />
+          </small>
         </p>
         {/* Only relevant for the web build where IndexedDB may be evicted. Hide for extension builds to avoid confusing prompts in Firefox/Chromium. */}
         {BUILD_TARGET === "web" && <Persist />}
