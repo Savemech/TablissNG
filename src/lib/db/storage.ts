@@ -1,6 +1,7 @@
+import type Browser from "webextension-polyfill";
+
 import * as DB from "./db";
 import * as Stream from "./stream";
-import type Browser from "webextension-polyfill";
 
 /** IndexedDB storage provider */
 // TODO: clean up indexeddb usage, convert to promises and double check error handling

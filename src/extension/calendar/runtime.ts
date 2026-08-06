@@ -1,5 +1,5 @@
-import { getCalendarFeedCache, putCalendarFeedCache } from "./cacheStore";
 import { hasDataCollectionPermissions } from "../dataConsent";
+import { getCalendarFeedCache, putCalendarFeedCache } from "./cacheStore";
 import { getCalendarFeeds } from "./feedStore";
 import { refreshGoogleCalendarFeed } from "./googleRuntime";
 import { parseICalendar } from "./ical";

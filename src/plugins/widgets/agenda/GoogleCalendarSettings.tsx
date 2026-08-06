@@ -11,11 +11,11 @@ import {
   GOOGLE_CALENDAR_PERMISSION_ORIGINS,
   googleOAuthRedirectUrl,
 } from "../../../extension/calendar/googleAuth";
-import { requestOptionalPermissions } from "../../../extension/dataConsent";
 import type {
   GoogleCalendarFeed,
   GoogleCalendarInfo,
 } from "../../../extension/calendar/types";
+import { requestOptionalPermissions } from "../../../extension/dataConsent";
 import {
   type BackgroundResponse,
   REFRESH_CALENDAR_FEED,

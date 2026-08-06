@@ -1,3 +1,4 @@
+import { exportStore, importStore, validateStoreDump } from "../db/action";
 import {
   announceFaviconLibraryChange,
   clearManualFavicons,
@@ -6,15 +7,14 @@ import {
   putPortableFavicon,
 } from "../extension/favicon/store";
 import type { PortableFaviconAsset } from "../extension/favicon/types";
+import { localFontFamily, validateLocalFont } from "../fonts/model";
 import {
   clearLocalFonts,
   importLocalFont,
   listLocalFonts,
 } from "../fonts/store";
 import type { LocalFontRecord } from "../fonts/types";
-import { localFontFamily, validateLocalFont } from "../fonts/model";
 import { base64ToBlob, blobToBase64 } from "../lib/blob";
-import { exportStore, importStore, validateStoreDump } from "../db/action";
 
 const BACKUP_FORMAT = "fdial-portable-backup";
 const BACKUP_VERSION = 1 as const;

@@ -1,8 +1,8 @@
 import {
   FAVICON_SYNC_MAX_BINARY_BYTES,
+  type SyncedFavicon,
   syncedFaviconStorageKey,
   syncedItemBytes,
-  type SyncedFavicon,
 } from "./sync";
 
 describe("favicon sync envelope", () => {

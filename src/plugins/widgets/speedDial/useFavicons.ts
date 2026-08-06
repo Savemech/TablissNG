@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type Browser from "webextension-polyfill";
 
+import { normaliseFaviconForSync } from "../../../extension/favicon/normalise";
 import {
   deleteFavicon,
   deletePortableFavicon,
   FAVICON_LIBRARY_CHANGED_EVENT,
   getFavicon,
   getFavicons,
-  putPortableFavicon,
   putFavicon,
+  putPortableFavicon,
   restorePortableFavicons,
 } from "../../../extension/favicon/store";
-import { normaliseFaviconForSync } from "../../../extension/favicon/normalise";
 import {
   deleteSyncedFavicon,
   getSyncedFavicons,

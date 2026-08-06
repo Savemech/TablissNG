@@ -9,7 +9,7 @@ import {
 } from "react-intl";
 
 import { MAX_LOCAL_FONTS } from "../../fonts/model";
-import { type FontPreset,fontPresets } from "../../fonts/presets";
+import { type FontPreset, fontPresets } from "../../fonts/presets";
 import {
   addLocalFont,
   LocalFontError,

@@ -115,9 +115,9 @@ describe("portable Speed Dial root folder", () => {
       children: [],
     });
 
-    expect(
-      createPortableFolderSelector(target, "ff-work-empty")?.path,
-    ).toEqual(["work"]);
+    expect(createPortableFolderSelector(target, "ff-work-empty")?.path).toEqual(
+      ["work"],
+    );
     expect(resolvePortableFolder(target, selector)).toBeUndefined();
   });
 });

@@ -8,7 +8,7 @@ import {
   useIntl,
 } from "react-intl";
 
-import { type Daypart,DAYPARTS } from "./model";
+import { type Daypart, DAYPARTS } from "./model";
 import { presetsForDaypart } from "./presets";
 import { defaultData, type Props } from "./types";
 
