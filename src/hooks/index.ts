@@ -8,6 +8,7 @@ export * from "./useFormatMessages";
 export * from "./useFullscreen";
 export * from "./useIsNight";
 export * from "./useKeyPress";
+export * from "./useMinuteTime";
 export * from "./useObjectUrl";
 export * from "./useSavedReducer";
 export * from "./useSystemTheme";
