@@ -544,6 +544,60 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       ).toBeVisible();
       await expect(dashboardWidget).toHaveCSS("color", "rgb(248, 250, 252)");
       await expect(dashboardWidget).toHaveCSS("text-shadow", /rgba?\(0, 0, 0/);
+
+      const timeSettings = page.locator(".Settings fieldset.Widget", {
+        has: page.locator("h4", { hasText: /^Time$/ }),
+      });
+      await timeSettings.locator("h4").click();
+      await timeSettings
+        .getByText("Open Font Settings", { exact: true })
+        .click();
+      const fontPicker = timeSettings.locator(".FontFamilyPicker");
+      await fontPicker.locator("select").selectOption({ label: "Monospace" });
+      const timeWidget = page.locator(".Dashboard .Widget", {
+        has: page.locator(".Time"),
+      });
+      await expect(timeWidget).toHaveCSS("font-family", /ui-monospace/);
+
+      await fontPicker.locator('input[type="file"]').setInputFiles({
+        name: "E2E_Font.woff2",
+        mimeType: "font/woff2",
+        buffer: Buffer.from("not-a-real-font-but-valid-local-storage-fixture"),
+      });
+      await expect(fontPicker.locator("select")).toHaveValue(/^fdial-local-/);
+      await expect(timeWidget).toHaveCSS("font-family", /^fdial-local-/);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              new Promise<{ count: number; size: number }>(
+                (resolve, reject) => {
+                  const open = indexedDB.open("fdial/fonts", 1);
+                  open.onerror = () => reject(open.error);
+                  open.onsuccess = () => {
+                    const request = open.result
+                      .transaction("fonts", "readonly")
+                      .objectStore("fonts")
+                      .getAll();
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () =>
+                      resolve({
+                        count: request.result.length,
+                        size: request.result[0]?.blob.size ?? 0,
+                      });
+                  };
+                },
+              ),
+          ),
+        )
+        .toEqual({
+          count: 1,
+          size: Buffer.byteLength(
+            "not-a-real-font-but-valid-local-storage-fixture",
+          ),
+        });
+      await fontPicker.getByRole("button", { name: "Remove" }).click();
+      await expect(fontPicker.locator("select")).toHaveValue("");
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),
