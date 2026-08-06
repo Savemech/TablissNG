@@ -28,6 +28,13 @@
   ],
   "optional_permissions": [
     "bookmarks",
-    "topSites"
-  ]
+    "topSites",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  }
 }

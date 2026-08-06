@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import path from "node:path";
 
 import { chromium, expect, test } from "@playwright/test";
@@ -24,6 +25,89 @@ test("Speed Dial works in the installed Chromium extension", async () => {
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.goto(`chrome-extension://${extensionId}/index.html`);
+
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          chrome.runtime.sendMessage({ type: "fdial/background/health" }),
+        ),
+      )
+      .toEqual({ ok: true, status: "healthy" });
+
+    let iconRequests = 0;
+    const icon = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9WlS8AAAAASUVORK5CYII=",
+      "base64",
+    );
+    const iconServer = createServer((request, response) => {
+      if (request.url === "/favicon.ico") {
+        iconRequests += 1;
+        response.writeHead(200, { "content-type": "image/png" });
+        response.end(icon);
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end("<title>Local service</title>");
+    });
+    await new Promise<void>((resolve) =>
+      iconServer.listen(0, "127.0.0.1", resolve),
+    );
+    try {
+      const address = iconServer.address();
+      if (!address || typeof address === "string") {
+        throw new Error("Could not start the favicon fixture server");
+      }
+      const faviconRequest = {
+        type: "fdial/favicon/fetch",
+        bookmarkId: "e2e-favicon",
+        pageUrl: `http://127.0.0.1:${address.port}/dashboard`,
+        source: "direct",
+        ttlDays: 30,
+      };
+      await expect
+        .poll(() =>
+          page.evaluate(
+            (message) => chrome.runtime.sendMessage(message),
+            faviconRequest,
+          ),
+        )
+        .toEqual({ ok: true, status: "ready" });
+      expect(iconRequests).toBe(1);
+
+      await expect(
+        page.evaluate(
+          (message) => chrome.runtime.sendMessage(message),
+          faviconRequest,
+        ),
+      ).resolves.toEqual({ ok: true, status: "cached" });
+      expect(iconRequests).toBe(1);
+
+      const cachedIcon = await page.evaluate(
+        (bookmarkId) =>
+          new Promise<{ size: number; status: string }>((resolve, reject) => {
+            const open = indexedDB.open("fdial/assets", 1);
+            open.onerror = () => reject(open.error);
+            open.onsuccess = () => {
+              const request = open.result
+                .transaction("favicons", "readonly")
+                .objectStore("favicons")
+                .get(bookmarkId);
+              request.onerror = () => reject(request.error);
+              request.onsuccess = () =>
+                resolve({
+                  size: request.result.blob.size,
+                  status: request.result.status,
+                });
+            };
+          }),
+        faviconRequest.bookmarkId,
+      );
+      expect(cachedIcon).toEqual({ size: icon.length, status: "ready" });
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        iconServer.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
 
     await page.evaluate(async () => {
       const root = await chrome.bookmarks.create({ title: "E2E Speed Dial" });

@@ -14,6 +14,14 @@ const grantOptionalPermissionsForE2E =
   process.env.E2E_GRANT_OPTIONAL_PERMISSIONS === "true";
 const { version } = require("./package.json");
 
+const entry = {
+  polyfills: "./src/polyfills.ts",
+  main: ["normalize.css", "./src/styles.sass", "./src/main.tsx"],
+};
+if (!isWeb && buildTarget !== "safari") {
+  entry.background = "./src/extension/background.ts";
+}
+
 const config = {
   performance: {
     // Keep the new-tab critical path small as features are added. Plugin and
@@ -23,10 +31,7 @@ const config = {
     maxAssetSize: 1024 * 1024,
   },
   lazyCompilation: false,
-  entry: {
-    polyfills: "./src/polyfills.ts",
-    main: ["normalize.css", "./src/styles.sass", "./src/main.tsx"],
-  },
+  entry,
   output: {
     path: path.resolve("dist", buildTarget),
     publicPath: isProduction ? "./" : "/",
@@ -124,6 +129,18 @@ const config = {
                 ];
                 delete manifest.optional_permissions;
               }
+              if (
+                grantOptionalPermissionsForE2E &&
+                manifest.optional_host_permissions
+              ) {
+                manifest.host_permissions = [
+                  ...new Set([
+                    ...(manifest.host_permissions ?? []),
+                    ...manifest.optional_host_permissions,
+                  ]),
+                ];
+                delete manifest.optional_host_permissions;
+              }
               // Update version so that I don't have to update it manually in each manifest file for releases.
               manifest.version = version;
               return JSON.stringify(manifest, null, 2);
@@ -135,6 +152,7 @@ const config = {
     }),
     new rspack.HtmlRspackPlugin({
       template: "./target/index.html",
+      chunks: ["polyfills", "main"],
       templateParameters: () => ({
         themeColorMeta: isWeb
           ? '<meta name="theme-color" content="#3498db" />'
@@ -159,7 +177,10 @@ const config = {
   },
   optimization: {
     splitChunks: {
-      chunks: "all",
+      // Background/event pages must remain self-contained classic scripts.
+      // Shared extension modules are intentionally duplicated into that tiny
+      // entry instead of creating a chunk the service worker cannot import.
+      chunks: (chunk) => chunk.name !== "background",
       cacheGroups: {
         vendors: {
           test: /[\\/]node_modules[\\/]/,
@@ -183,7 +204,7 @@ if (!isWeb) {
   );
 }
 
-if (isProduction && buildTarget !== "firefox") {
+if (isProduction && (isWeb || buildTarget === "safari")) {
   const workbox = require("workbox-build");
   config.plugins.push({
     apply(compiler) {
