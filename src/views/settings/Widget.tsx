@@ -11,6 +11,7 @@ import { getConfig } from "../../plugins";
 import { DownIcon, Icon, IconButton, RemoveIcon, UpIcon } from "../shared";
 import PluginContainer from "../shared/Plugin";
 import ToggleSection from "../shared/ToggleSection";
+import FontFamilyPicker from "./FontFamilyPicker";
 import WidgetDisplay from "./WidgetDisplay";
 
 // Define messages used in props/attributes
@@ -131,21 +132,10 @@ const Widget: FC<Props> = ({ plugin, onMoveDown, onMoveUp, onRemove }) => {
             name={intl.formatMessage(sectionMessages.fontSettings)}
           >
             <>
-              <label>
-                <FormattedMessage
-                  id="settings.font.family"
-                  defaultMessage="Font"
-                  description="Font title"
-                />{" "}
-                <br />
-                <input
-                  type="text"
-                  value={plugin.display.fontFamily}
-                  onChange={(event) =>
-                    setDisplay({ fontFamily: event.target.value })
-                  }
-                />
-              </label>
+              <FontFamilyPicker
+                value={plugin.display.fontFamily}
+                onChange={(fontFamily) => setDisplay({ fontFamily })}
+              />
 
               <label>
                 <FormattedMessage

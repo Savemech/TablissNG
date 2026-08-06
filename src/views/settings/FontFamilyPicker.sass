@@ -1,0 +1,47 @@
+.FontFamilyPicker
+    display: grid
+    gap: 0.65rem
+
+    > label
+        margin: 0
+
+    &__preview
+        min-height: 2.6rem
+        padding: 0.65rem
+        display: flex
+        align-items: center
+        overflow: hidden
+        border: 1px solid var(--border-main)
+        border-radius: 0.35rem
+        background: var(--bg-input)
+        font-size: 1.15rem
+        white-space: nowrap
+
+    &__upload input
+        margin-top: 0.3rem
+
+    &__library
+        margin: 0
+        padding: 0
+        display: grid
+        gap: 0.35rem
+        list-style: none
+
+        li
+            padding: 0.45rem
+            display: flex
+            align-items: center
+            justify-content: space-between
+            gap: 0.5rem
+            border: 1px solid var(--border-light)
+            border-radius: 0.3rem
+
+            span
+                min-width: 0
+                overflow: hidden
+                text-overflow: ellipsis
+
+    &__error
+        margin: 0
+        color: #c63d35
+        font-size: 0.9em

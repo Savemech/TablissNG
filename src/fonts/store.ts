@@ -12,6 +12,15 @@ const DATABASE_VERSION = 1;
 const STORE_NAME = "fonts";
 export const FONT_LIBRARY_CHANGED_EVENT = "fdial:font-library-changed";
 
+export type LocalFontErrorCode = "invalid-type" | "too-large" | "too-many";
+
+export class LocalFontError extends Error {
+  constructor(readonly code: LocalFontErrorCode) {
+    super(code);
+    this.name = "LocalFontError";
+  }
+}
+
 let databasePromise: Promise<IDBDatabase> | undefined;
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -75,14 +84,14 @@ export async function listLocalFonts(): Promise<LocalFontRecord[]> {
 export async function addLocalFont(file: File): Promise<LocalFontRecord> {
   const validation = validateLocalFont(file);
   if (validation === "invalid-type") {
-    throw new Error("Choose a WOFF2, WOFF, TTF or OTF font file");
+    throw new LocalFontError("invalid-type");
   }
   if (validation === "too-large") {
-    throw new Error("Font files must be 6 MiB or smaller");
+    throw new LocalFontError("too-large");
   }
   const existing = await listLocalFonts();
   if (existing.length >= MAX_LOCAL_FONTS) {
-    throw new Error(`Up to ${MAX_LOCAL_FONTS} local fonts can be stored`);
+    throw new LocalFontError("too-many");
   }
   const id = fontId();
   const mimeType = fontMimeType(file.name, file.type);
