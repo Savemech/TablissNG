@@ -1,7 +1,16 @@
-import { useMinuteTime } from "../../../hooks";
-import { type Daypart, daypartAtMinutes, type DaypartSchedule } from "./model";
+import { useMemo } from "react";
 
-export function useDaypart(schedule?: Partial<DaypartSchedule>): Daypart {
-  const time = useMinuteTime();
-  return daypartAtMinutes(time.getHours() * 60 + time.getMinutes(), schedule);
+import { db } from "../../../db/state";
+import { useMinuteTime } from "../../../hooks";
+import { useValue } from "../../../lib/db/react";
+import { type DaypartRuntime, resolveDaypartRuntime } from "./runtime";
+import type { Data } from "./types";
+
+export function useDaypart(data: Data): DaypartRuntime {
+  const time = useMinuteTime("absolute");
+  const timeZone = useValue(db, "timeZone");
+  return useMemo(
+    () => resolveDaypartRuntime(time, data, timeZone),
+    [data, time, timeZone],
+  );
 }

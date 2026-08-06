@@ -7,16 +7,22 @@ import { CrossFade } from "react-crossfade-simple";
 import { usePublishBackgroundAppearance } from "../../../backgroundAppearance";
 import { useBackdropPresentation } from "../base/useBackdrop";
 import { resolveDaypartPreset } from "./presets";
+import { normaliseSolarSchedule } from "./solarSchedule";
 import { defaultData, type Props } from "./types";
 import { useDaypart } from "./useDaypart";
 
 const Daypart: FC<Props> = ({ data = defaultData }) => {
-  const schedule = { ...defaultData.schedule, ...data.schedule };
+  const normalizedData = {
+    ...defaultData,
+    ...data,
+    schedule: { ...defaultData.schedule, ...data.schedule },
+    solar: normaliseSolarSchedule(data.solar),
+  };
   const selected = {
     ...defaultData.presetByDaypart,
     ...data.presetByDaypart,
   };
-  const daypart = useDaypart(schedule);
+  const { daypart } = useDaypart(normalizedData);
   const preset = resolveDaypartPreset(daypart, selected[daypart]);
   const { backdropStyle, baseColor, effectiveLuminance, owner } =
     useBackdropPresentation(preset.luminance);
