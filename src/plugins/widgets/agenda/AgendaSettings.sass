@@ -50,6 +50,60 @@
     padding-top: 0.75rem
     border-top: 1px solid var(--border-light)
 
+    h6
+      margin: 0 0 0.65rem
+
+  &__google
+    margin-top: 1rem
+    padding: 0.85rem
+    border: 1px solid var(--border-main)
+    border-radius: 0.4rem
+
+    h6
+      margin: 0 0 0.45rem
+
+    > label
+      margin-top: 0.65rem
+
+  &__google-configured
+    margin: 0.65rem 0
+
+  &__google-actions
+    margin-top: 0.75rem
+    display: flex
+    flex-wrap: wrap
+    gap: 0.45rem
+
+  &__redirect
+    font-family: monospace
+    font-size: 0.82em
+
+  &__google-calendars
+    margin: 0.85rem 0 0
+    padding: 0.65rem
+    display: grid
+    gap: 0.45rem
+    border: 1px solid var(--border-light)
+    border-radius: 0.35rem
+
+    legend
+      padding: 0 0.3rem
+
+    label
+      margin: 0
+      display: grid
+      grid-template-columns: auto 0.65rem minmax(0, 1fr) auto
+      align-items: center
+      gap: 0.45rem
+
+      small
+        color: var(--text-secondary)
+
+  &__google-colour
+    width: 0.65rem
+    height: 0.65rem
+    border-radius: 50%
+
   &__colour-input
     display: flex !important
     align-items: center

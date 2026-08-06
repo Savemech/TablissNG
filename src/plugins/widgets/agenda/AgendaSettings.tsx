@@ -14,15 +14,22 @@ import { deleteCalendarFeedCache } from "../../../extension/calendar/cacheStore"
 import {
   CALENDAR_FEEDS_STORAGE_KEY,
   getCalendarFeeds,
+  MAX_CALENDAR_FEEDS,
   setCalendarFeeds,
 } from "../../../extension/calendar/feedStore";
-import type { CalendarFeed } from "../../../extension/calendar/types";
+import { GOOGLE_CALENDAR_PERMISSION_ORIGINS } from "../../../extension/calendar/googleAuth";
+import type {
+  CalendarFeed,
+  GoogleCalendarFeed,
+  ICalFeed,
+} from "../../../extension/calendar/types";
 import { permissionOriginForUrl } from "../../../extension/favicon/fetch";
 import {
   type BackgroundResponse,
   REFRESH_ALL_CALENDARS,
   REFRESH_CALENDAR_FEED,
 } from "../../../extension/messages";
+import GoogleCalendarSettings from "./GoogleCalendarSettings";
 import { validTimeZone } from "./model";
 import { defaultData, type Props } from "./types";
 
@@ -52,6 +59,11 @@ const messages = defineMessages({
     defaultMessage: "That IANA timezone is not recognised.",
     description: "Invalid agenda timezone error",
   },
+  tooManyFeeds: {
+    id: "plugins.agenda.settings.tooManyFeeds",
+    defaultMessage: "Up to {count} calendar sources can be enabled.",
+    description: "Maximum calendar source count error",
+  },
 });
 
 function feedId(): string {
@@ -72,6 +84,13 @@ async function requestFeedPermission(url: string): Promise<boolean> {
   const origin = permissionOriginForUrl(url);
   if (!origin) return false;
   return browser.permissions.request({ origins: [origin] });
+}
+
+async function requestCalendarPermission(feed: CalendarFeed): Promise<boolean> {
+  if (feed.kind === "ical") return requestFeedPermission(feed.url);
+  return browser.permissions.request({
+    origins: [...GOOGLE_CALENDAR_PERMISSION_ORIGINS],
+  });
 }
 
 const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
@@ -106,6 +125,14 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
   }, [reloadFeeds]);
 
   const persist = async (nextFeeds: CalendarFeed[]): Promise<boolean> => {
+    if (nextFeeds.length > MAX_CALENDAR_FEEDS) {
+      setError(
+        intl.formatMessage(messages.tooManyFeeds, {
+          count: MAX_CALENDAR_FEEDS,
+        }),
+      );
+      return false;
+    }
     try {
       await setCalendarFeeds(nextFeeds);
       setFeeds(nextFeeds);
@@ -121,12 +148,10 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
     setWorkingId(feed.id);
     setError(undefined);
     try {
-      if (feed.kind === "ical") {
-        const granted = await requestFeedPermission(feed.url);
-        if (!granted) {
-          setError(intl.formatMessage(messages.permissionError));
-          return;
-        }
+      const granted = await requestCalendarPermission(feed);
+      if (!granted) {
+        setError(intl.formatMessage(messages.permissionError));
+        return;
       }
       const response = (await browser.runtime.sendMessage({
         type: REFRESH_CALENDAR_FEED,
@@ -166,7 +191,7 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
         setError(intl.formatMessage(messages.permissionError));
         return;
       }
-      const feed: CalendarFeed = {
+      const feed: ICalFeed = {
         id: feedId(),
         kind: "ical",
         name: name.trim() || parsed.hostname,
@@ -216,11 +241,16 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
       setError(intl.formatMessage(messages.timezoneError));
       return;
     }
-    if (feeds.every((feed) => feed.timeZone === data.timeZone)) return;
-    const nextFeeds = feeds.map((feed) => ({
-      ...feed,
-      timeZone: data.timeZone,
-    }));
+    if (
+      feeds.every(
+        (feed) => feed.kind === "google" || feed.timeZone === data.timeZone,
+      )
+    ) {
+      return;
+    }
+    const nextFeeds = feeds.map((feed) =>
+      feed.kind === "ical" ? { ...feed, timeZone: data.timeZone } : feed,
+    );
     try {
       if (await persist(nextFeeds)) {
         await browser.runtime.sendMessage({
@@ -231,6 +261,15 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
     } catch {
       setError(intl.formatMessage(messages.refreshError));
     }
+  };
+
+  const saveGoogleFeeds = async (
+    googleFeeds: GoogleCalendarFeed[],
+  ): Promise<boolean> => {
+    return persist([
+      ...feeds.filter((feed) => feed.kind === "ical"),
+      ...googleFeeds,
+    ]);
   };
 
   return (
@@ -312,15 +351,15 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
         <h5>
           <FormattedMessage
             id="plugins.agenda.settings.feeds"
-            defaultMessage="iCal subscriptions"
-            description="iCal feed settings heading"
+            defaultMessage="Calendar sources"
+            description="Calendar source settings heading"
           />
         </h5>
         <p className="info">
           <FormattedMessage
             id="plugins.agenda.settings.localPrivacy"
-            defaultMessage="Feed URLs and cached events stay in local extension storage; secret iCal URLs are not written to browser sync."
-            description="iCal local storage privacy explanation"
+            defaultMessage="Calendar configuration and cached events stay in local extension storage; private URLs and account data are not written to browser sync."
+            description="Calendar local storage privacy explanation"
           />
         </p>
 
@@ -333,7 +372,15 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
             <span className="AgendaSettings__feed-name">
               <strong>{feed.name}</strong>
               <small>
-                {feed.kind === "ical" ? hostLabel(feed.url) : "Google Calendar"}
+                {feed.kind === "ical" ? (
+                  hostLabel(feed.url)
+                ) : (
+                  <FormattedMessage
+                    id="plugins.agenda.settings.googleSource"
+                    defaultMessage="Google Calendar"
+                    description="Google Calendar source type label"
+                  />
+                )}
               </small>
             </span>
             <label>
@@ -396,10 +443,25 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
           </div>
         ))}
 
+        <GoogleCalendarSettings
+          feeds={feeds.filter(
+            (feed): feed is GoogleCalendarFeed => feed.kind === "google",
+          )}
+          canAdd={feeds.length < MAX_CALENDAR_FEEDS}
+          onSave={saveGoogleFeeds}
+        />
+
         <form
           className="AgendaSettings__add"
           onSubmit={(event) => void addFeed(event)}
         >
+          <h6>
+            <FormattedMessage
+              id="plugins.agenda.settings.ical"
+              defaultMessage="iCal subscription"
+              description="iCal subscription form heading"
+            />
+          </h6>
           <label>
             <FormattedMessage
               id="plugins.agenda.settings.feedName"
