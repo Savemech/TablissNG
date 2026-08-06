@@ -60,7 +60,7 @@ export const defaultData: Data = {
   links: [
     {
       id: "default-link",
-      url: "https://github.com/BookCatKid/TablissNG",
+      url: "https://github.com/Savemech/TablissNG",
       name: "TablissNG",
     },
   ],

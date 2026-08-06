@@ -1,11 +1,12 @@
 {
   "manifest_version": 2,
-  "name": "TablissNG",
+  "name": "Fdial",
   "version": "PLACEHOLDER",
-  "description": "A beautiful, customizable New Tab page with various backgrounds and widgets. This is an actively maintained fork of the original Tabliss, with merged community contributions and ongoing updates.",
+  "description": "A fast, private new-tab dashboard with Speed Dial, Agenda, daypart backgrounds and portable backups.",
+  "homepage_url": "https://github.com/Savemech/TablissNG",
   "browser_specific_settings": {
     "gecko": {
-      "id": "extension@tabliss-maintained",
+      "id": "fdial@savemech.github",
       "strict_min_version": "58.0"
     }
   },

@@ -1,8 +1,8 @@
 <p align="left">
-  <img src="src/views/shared/tabliss.svg" alt="TablissNG logo" width="400" />
+  <img src="src/views/shared/tabliss.svg" alt="Fdial logo" width="400" />
 </p>
 
-> A beautiful, customisable New Tab page for Firefox and Chrome.
+> A fast, private and portable New Tab dashboard for Firefox and Chromium.
 
 <img src="screenshots/screenshot_1.png" width="49%"/> <img src="screenshots/screenshot_2.png" width="50%"/>
 <img src="screenshots/screenshot_3.png" width="49%"/> <img src="screenshots/screenshot_4.png" width="50%"/>
@@ -12,41 +12,39 @@
 <img src="screenshots/screenshot_8.png" width="24%"/>
 
 <div align="center">
-    <a href="https://chromewebstore.google.com/detail/tablissng/dlaogejjiafeobgofajdlkkhjlignalk">
-        <img src="https://img.shields.io/chrome-web-store/users/dlaogejjiafeobgofajdlkkhjlignalk?logo=googlechrome&logoColor=ffffff&color=0779ba"></a>
-    <a href="https://addons.mozilla.org/en-US/firefox/addon/tablissng/">
-        <img src="https://img.shields.io/amo/users/tablissng?logo=firefoxbrowser&logoColor=ffffff"></a>
-    <a href="https://github.com/BookCatKid/TablissNG/stargazers">
-        <img src="https://img.shields.io/github/stars/BookCatKid/TablissNG?style=flat"></a>
-    <a href="https://github.com/BookCatKid/TablissNG/commits/main/">
-        <img src="https://img.shields.io/github/last-commit/BookCatKid/TablissNG?color=0779ba"></a>
-    <a href="https://github.com/BookCatKid/TablissNG/releases/latest">
-        <img src="https://img.shields.io/github/v/release/BookCatKid/TablissNG.svg?logo=github"></a>
+    <a href="https://github.com/Savemech/TablissNG/stargazers">
+        <img src="https://img.shields.io/github/stars/Savemech/TablissNG?style=flat"></a>
+    <a href="https://github.com/Savemech/TablissNG/commits/fdial/main/">
+        <img src="https://img.shields.io/github/last-commit/Savemech/TablissNG/fdial/main?color=0779ba"></a>
     <a href="https://www.gnu.org/licenses/gpl-3.0">
         <img src="https://img.shields.io/badge/License-GNU%20GPL%20v3-blue"></a>
 </div>
 
-## Maintained Fork of Tabliss
+## Fdial 2
 
-This repository is a maintained fork of Tabliss, originally a customizable new tab page for Firefox and Chrome. The original project has been abandoned, with no updates for over a year and numerous unmerged pull requests. I cloned the repository and merged most pending pull requests to bring in improvements and bug fixes. Moving forward, I will actively maintain and update this fork to keep Tabliss functional and up to date.
+Fdial is a GPL-3.0 fork of TablissNG focused on a small, fast startup core and
+offline-first browser integration. It keeps the mature widget system while
+adding a portable Speed Dial and Agenda suitable for moving from Chrome to
+Firefox.
 
-### What's Next?
+Highlights:
 
-- Continued updates and bug fixes
-- Adding new features from community contributions
-- Keeping dependencies up to date
+- Responsive 32–128 px Speed Dial tiles, folders and drag-and-drop ordering.
+- Direct/private favicon fetching, manual icons, local cache and bounded sync.
+- Multi-feed iCal Agenda and Google Calendar read-only OAuth/PKCE.
+- Offline daypart background gallery with morning/day/evening/night schedules.
+- Automatic black/white text contrast and opposite outline.
+- Font presets plus local WOFF2/WOFF/TTF/OTF uploads.
+- Live browser settings sync and a Chrome ↔ Firefox portable asset backup.
+- Lazy widget/background chunks and background network jobs with strict size
+  budgets.
 
-If you were a contributor to the original repo or have ideas for improvements, feel free to open an issue or submit a pull request. Let’s keep Tabliss alive!
+The original Tabliss and TablissNG authors and contributors retain their
+copyright; see the Git history and GPL license.
 
-### Looking for contribution ideas?
+## Inherited TablissNG features
 
-Check out the [github project](https://github.com/users/BookCatKid/projects/3?query=sort%3Aupdated-desc+is%3Aopen) for a list of features that are wanted, but not yet implemented. Anything not in `in progress` is most likely free for you to work on!
-
----
-
-## Brief Overview of a Few Improvements Over Tabliss
-
-This list is by no means exhaustive. TablissNG includes many other tweaks, quality-of-life improvements, and features not detailed here.
+Fdial retains the broad TablissNG widget and customization library.
 
 - Customization
   - Support for custom search engines and browser defaults
@@ -68,17 +66,11 @@ This list is by no means exhaustive. TablissNG includes many other tweaks, quali
 
 ## Installation
 
-<a href="https://addons.mozilla.org/en-US/firefox/addon/tablissng/"><img src="assets/badges/firefox-badge.svg" height="70"></a>
-<a href="https://chromewebstore.google.com/detail/tablissng/dlaogejjiafeobgofajdlkkhjlignalk"><img src="assets/badges/chrome-badge.png" alt="Get the Extension on Chrome" height="70" style="border-radius:4px;"></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/tablissng/mkaphhbkcccpgkfaifhhdfckagnkcmhm"><img src="assets/badges/edge-badge.png" alt="Get the Extension on Edge" height="70"></a>
-
-The extension is available in the [Firefox Add-ons Store](https://addons.mozilla.org/en-US/firefox/addon/tablissng/), in the [Chrome Web Store](https://chromewebstore.google.com/detail/tablissng/dlaogejjiafeobgofajdlkkhjlignalk), and in the [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/tablissng/mkaphhbkcccpgkfaifhhdfckagnkcmhm). If you want to use Safari, see [INSTALL.md](INSTALL.md).
-
-**Nightly Builds (Firefox):**
-
-- **Nightly** (v1.6.5.0): [Install Nightly](https://github.com/BookCatKid/TablissNG/releases/download/nightly-auto/tablissng-1.6.5.0.xpi)
-
-If you want to install the extension manually, or want nightly builds, see [INSTALL.md](INSTALL.md).
+Run `pnpm release:local`. Ready-to-load Chromium and unsigned Firefox packages,
+checksums and a release manifest are written to `dist/packages/`. See
+[Fdial local builds](docs/docs/getting-started/installation/fdial-local-builds.md)
+for browser instructions, stable extension IDs, Firefox signing and Google
+Calendar OAuth configuration.
 
 ## Running Locally
 
@@ -87,8 +79,9 @@ For local development, you'll need Node.js and pnpm installed. Latest versions s
 First, clone the repo:
 
 ```sh
-git clone https://github.com/BookCatKid/TablissNG.git
+git clone https://github.com/Savemech/TablissNG.git
 cd TablissNG
+git switch fdial/main
 ```
 
 Then install the dependencies:
@@ -101,6 +94,7 @@ pnpm install
 
 - `pnpm run dev` — Start a local development server
 - `pnpm run build` — Build the project
+- `pnpm run release:local` — Build and package Chromium + Firefox
 - `pnpm run test` — Run tests
 - `pnpm run translations` — Extract and sync translation files (see [TRANSLATING.md](TRANSLATING.md) for details)
 - `pnpm run translations status` — Show translation status (pass language, e.g. `pnpm run translations status fr`)

@@ -1,7 +1,7 @@
 {
   "name": "tablissng",
-  "version": "1.7.1",
-  "description": "A beautiful, customizable New Tab page. This is an actively maintained fork of the original Tabliss project.",
+  "version": "2.0.0",
+  "description": "A fast, private and portable new-tab dashboard for Firefox and Chromium.",
   "license": "GPL-3.0",
   "private": true,
   "packageManager": "pnpm@11.13.1",
@@ -11,10 +11,19 @@
   },
   "contributors": [
     {
+      "name": "Savemech",
+      "url": "https://github.com/Savemech"
+    },
+    {
       "name": "Joel Shepherd",
       "url": "https://github.com/joelshepherd"
     }
   ],
+  "homepage": "https://github.com/Savemech/TablissNG",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Savemech/TablissNG.git"
+  },
   "scripts": {
     "build": "pnpm run build:web",
     "build:prepare": "pnpm run translations compile",
@@ -23,6 +32,8 @@
     "build:firefox": "pnpm run build:prepare && cross-env NODE_ENV=production BUILD_TARGET=firefox rspack",
     "build:safari": "pnpm run build:prepare && cross-env NODE_ENV=production BUILD_TARGET=safari rspack",
     "build:web": "pnpm run build:prepare && cross-env NODE_ENV=production BUILD_TARGET=web rspack",
+    "package:local": "node ./scripts/package-local.js",
+    "release:local": "pnpm run build:chromium && pnpm run build:firefox && pnpm run package:local",
     "dev": "pnpm run dev:web",
     "dev:chromium": "cross-env BUILD_TARGET=chromium rspack --watch",
     "dev:firefox": "cross-env BUILD_TARGET=firefox rspack --watch",

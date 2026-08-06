@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "TablissNG",
+  "name": "Fdial",
   "version": "PLACEHOLDER",
-  "description": "A beautiful, customizable New Tab page with backgrounds and widgets. This is a maintained fork with ongoing updates in the future.",
-  "homepage_url": "https://github.com/BookCatKid/TablissNG",
+  "description": "A fast, private new-tab dashboard with Speed Dial, Agenda, daypart backgrounds and portable backups.",
+  "homepage_url": "https://github.com/Savemech/TablissNG",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
@@ -29,5 +29,5 @@
   "background": {
     "service_worker": "background.js"
   },
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAncIg0oMeeoC83bUlSnJm9BHOkW7QJ1h9qmE0Ucuxym7Ff3mlF1wWrA0PJ52vaspShq07KVrK6jghHScj7B0fbw5XGYAVhLffDI2B4uRq4DVn4cjEHm7Jg7NWvziitxOL+pNAK/gT5A1/PME/CgzNgIYQIlw7OGIE/nLHTrLrpeV/ffKjweyQIL9oIgiiBW9eKxz7LDfzVC6n1YDAO52KUa0Vx3Wvrr0zjT6B9A7s/fzYDQ66WCr1094J8H6CeZmLIafL2GHQprCrKxerr9i+ny98lbD9FkrBSl7qPbPXg4iYNP36hqTiLwCc5q4D2EY7tfbCWdNv1MCBuIVFU3GfFwIDAQAB"
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnPNvkPQkWRmhWSYnVqP14Ra9AgOUmVJtfOWnC7st4g69qDbnjQW713u2X8xQikt9fPzbQqu4lEqD/m9kWX/5sg12lzcKVFDng6GRj9Q3J6lM4CzAdigq6yyKYsY2Y+4/fE9mWvx/OVM9uCbMJDn4S4rl0zX/Ua4PWBxtFLF2DyaXYlX1K7CXUwkByHZ8MEm1n6TLzk50VeAS4TIST7z6N96lIjK8dOV0sTaOf6pjz8PU2TbyQ0HughaSJgcncasrHNSTwxmZFDwYicGTfxMjoQ7ysQbvXpa8FJPx7Nm1hN8JbBwK15uQw46BpIY/HDOvcrrFb9yt9AmtdbBvQVBdaQIDAQAB"
 }

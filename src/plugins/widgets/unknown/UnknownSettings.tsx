@@ -14,7 +14,7 @@ const UnknownSettings: FC<API> = ({ data }) => {
         />
         &nbsp;
         <a
-          href="https://github.com/BookCatKid/tabliss-maintained/issues/new"
+          href="https://github.com/Savemech/TablissNG/issues/new"
           target="_blank"
           rel="noopener noreferrer"
         >

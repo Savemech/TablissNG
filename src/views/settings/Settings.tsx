@@ -37,17 +37,17 @@ const messages = defineMessages({
   },
   ariaRepo: {
     id: "settings.aria.repository",
-    defaultMessage: "Open repository BookCatKid/tablissNG on GitHub",
+    defaultMessage: "Open repository Savemech/TablissNG on GitHub",
     description: "ARIA label for the GitHub repository link",
   },
   ariaWatch: {
     id: "settings.aria.watch",
-    defaultMessage: "Watch BookCatKid/tablissNG on GitHub",
+    defaultMessage: "Watch Savemech/TablissNG on GitHub",
     description: "ARIA label for the GitHub watch button",
   },
   ariaStar: {
     id: "settings.aria.star",
-    defaultMessage: "Star BookCatKid/tablissNG on GitHub",
+    defaultMessage: "Star Savemech/TablissNG on GitHub",
     description: "ARIA label for the GitHub star button",
   },
   settingsImportExportReset: {
@@ -362,7 +362,7 @@ const Settings: FC = () => {
               >
                 <div style={{ width: "100%" }}>
                   <GitHubButton
-                    href="https://github.com/BookCatKid/tablissNG"
+                    href="https://github.com/Savemech/TablissNG"
                     data-icon="octicon-repo"
                     data-size="large"
                     data-show-count="false"
@@ -397,7 +397,7 @@ const Settings: FC = () => {
                 >
                   <div style={{ flex: 1 }}>
                     <GitHubButton
-                      href="https://github.com/BookCatKid/tablissNG/subscription"
+                      href="https://github.com/Savemech/TablissNG/subscription"
                       data-icon="octicon-eye"
                       data-size="large"
                       data-show-count="true"
@@ -414,7 +414,7 @@ const Settings: FC = () => {
 
                   <div style={{ flex: 1 }}>
                     <GitHubButton
-                      href="https://github.com/BookCatKid/tablissNG"
+                      href="https://github.com/Savemech/TablissNG"
                       data-icon="octicon-star"
                       data-size="large"
                       data-show-count="true"

@@ -2,7 +2,7 @@ const fs = require("fs/promises");
 const { execSync } = require("child_process");
 const path = require("path");
 
-const ADDON_ID = "extension@tabliss-maintained";
+const ADDON_ID = "fdial@savemech.github";
 const GH_HEADERS = {
   Authorization: `token ${process.env.GITHUB_TOKEN}`,
   Accept: "application/vnd.github.v3+json",
@@ -49,7 +49,7 @@ async function run() {
     const manifestPath = "./dist/firefox/manifest.json";
     const manifest = JSON.parse(await fs.readFile(manifestPath, "utf-8"));
     manifest.version = version;
-    manifest.browser_specific_settings.gecko.update_url = `https://raw.githubusercontent.com/BookCatKid/TablissNG/main/updates.json`;
+    manifest.browser_specific_settings.gecko.update_url = `https://raw.githubusercontent.com/Savemech/TablissNG/fdial/main/updates.json`;
     await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
     execSync(
@@ -59,12 +59,12 @@ async function run() {
 
     const signedFiles = await fs.readdir("./dist/signed");
     const xpi = signedFiles.find((f) => f.endsWith(".xpi"));
-    const newXpiPath = path.join("./dist", `tablissng-${version}.xpi`);
+    const newXpiPath = path.join("./dist", `fdial-${version}.xpi`);
     await fs.rename(path.join("./dist/signed", xpi), newXpiPath);
 
     console.log("Managing release...");
     let res = await fetch(
-      `https://api.github.com/repos/BookCatKid/TablissNG/releases/tags/nightly-auto`,
+      `https://api.github.com/repos/Savemech/TablissNG/releases/tags/nightly-auto`,
       { headers: GH_HEADERS },
     );
     let release = res.ok ? await res.json() : null;
@@ -74,7 +74,7 @@ async function run() {
     }
 
     for (const asset of release.assets) {
-      if (/tablissng-.*\.xpi/.test(asset.name)) {
+      if (/fdial-.*\.xpi/.test(asset.name)) {
         await fetch(asset.url, { method: "DELETE", headers: GH_HEADERS });
       }
     }
@@ -83,7 +83,7 @@ async function run() {
     const fileData = await fs.readFile(newXpiPath);
     const uploadUrl = release.upload_url.replace(
       "{?name,label}",
-      `?name=tablissng-${version}.xpi`,
+      `?name=fdial-${version}.xpi`,
     );
     const uploadRes = await fetch(uploadUrl, {
       method: "POST",
@@ -110,7 +110,7 @@ async function run() {
         `**Nightly** (v${version}):`,
       )
       .replace(
-        /\[Install Nightly\]\(https:\/\/github\.com\/BookCatKid\/TablissNG\/releases\/download\/nightly-auto\/tablissng-.*\.xpi\)/g,
+        /\[Install Nightly\]\(https:\/\/github\.com\/Savemech\/TablissNG\/releases\/download\/nightly-auto\/fdial-.*\.xpi\)/g,
         `[Install Nightly](${downloadUrl})`,
       );
     await fs.writeFile("README.md", readme);
@@ -121,7 +121,7 @@ async function run() {
     );
     firefoxDoc = firefoxDoc
       .replace(
-        /href="https:\/\/github\.com\/BookCatKid\/TablissNG\/releases\/download\/nightly-auto\/.*\.xpi"/g,
+        /href="https:\/\/github\.com\/Savemech\/TablissNG\/releases\/download\/nightly-auto\/.*\.xpi"/g,
         `href="${downloadUrl}"`,
       )
       .replace(
@@ -136,10 +136,7 @@ async function run() {
     let install = await fs.readFile("INSTALL.md", "utf-8");
     await fs.writeFile(
       "INSTALL.md",
-      install.replace(
-        /tablissng-\d+\.\d+\.\d+\.\d+\.xpi/g,
-        `tablissng-${version}.xpi`,
-      ),
+      install.replace(/fdial-\d+\.\d+\.\d+\.\d+\.xpi/g, `fdial-${version}.xpi`),
     );
 
     console.log("Pushing changes...");

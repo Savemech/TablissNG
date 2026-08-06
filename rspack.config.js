@@ -240,7 +240,7 @@ if (isProduction && (isWeb || buildTarget === "safari")) {
                 url.hostname === "github-contributions-api.jogruber.de" ||
                 url.hostname === "leetcode-api-pied.vercel.app" ||
                 url.href.startsWith(
-                  "https://api.github.com/repos/BookCatKid/tablissNG",
+                  "https://api.github.com/repos/Savemech/TablissNG",
                 ),
 
               handler: "CacheFirst",

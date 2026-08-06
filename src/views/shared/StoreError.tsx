@@ -44,7 +44,7 @@ const StoreError: FC<Props> = ({ onClose }) => {
                 </a>
               ),
               github: (chunks) => (
-                <a href="https://github.com/BookCatKid/tablissNG/issues/new">
+                <a href="https://github.com/Savemech/TablissNG/issues/new">
                   {chunks}
                 </a>
               ),

@@ -8,3 +8,4 @@ src/locales/lang.compiled
 /test-results
 /playwright-report
 /blob-report
+/.keys
