@@ -1,7 +1,16 @@
 import type { API } from "../../types";
+import type { AutomaticFaviconSource } from "../../../extension/favicon/types";
 import { emptyLayout, type LayoutOverlay } from "./layout";
 
 export type Density = "compact" | "comfortable" | "spacious";
+
+export type FaviconSettings = {
+  consent: "ask" | "enabled" | "disabled";
+  source: AutomaticFaviconSource;
+  includeLocal: boolean;
+  concurrency: number;
+  ttlDays: number;
+};
 
 export type Data = {
   rootBookmarkId: string | null;
@@ -10,6 +19,7 @@ export type Data = {
   showLabels: boolean;
   maxLabelLength: number;
   layout: LayoutOverlay;
+  favicons: FaviconSettings;
 };
 
 export type Props = API<Data>;
@@ -21,4 +31,11 @@ export const defaultData: Data = {
   showLabels: true,
   maxLabelLength: 24,
   layout: emptyLayout(),
+  favicons: {
+    consent: "ask",
+    source: "direct",
+    includeLocal: true,
+    concurrency: 4,
+    ttlDays: 30,
+  },
 };

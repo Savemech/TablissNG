@@ -139,6 +139,13 @@ test("Speed Dial works in the installed Chromium extension", async () => {
           showLabels: true,
           maxLabelLength: 24,
           layout: { orderByFolder: {}, parentByItem: {} },
+          favicons: {
+            consent: "disabled",
+            source: "direct",
+            includeLocal: true,
+            concurrency: 4,
+            ttlDays: 30,
+          },
         },
       });
     });
@@ -168,6 +175,73 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       scrollWidth: element.scrollWidth,
     }));
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+    // Speed Dial persistence is intentionally batched for one second. Let the
+    // drag-and-drop overlay flush before replacing this fixture's plugin data.
+    await page.waitForTimeout(1_100);
+
+    let uiIconRequests = 0;
+    const uiIconServer = createServer((request, response) => {
+      if (request.url === "/favicon.ico") {
+        uiIconRequests += 1;
+        response.writeHead(200, { "content-type": "image/png" });
+        response.end(icon);
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end("<title>Speed Dial icon fixture</title>");
+    });
+    await new Promise<void>((resolve) =>
+      uiIconServer.listen(0, "127.0.0.1", resolve),
+    );
+    try {
+      const address = uiIconServer.address();
+      if (!address || typeof address === "string") {
+        throw new Error("Could not start the UI favicon fixture server");
+      }
+      const localUrl = `http://127.0.0.1:${address.port}/dashboard`;
+      await page.evaluate(async (url) => {
+        const root = await chrome.bookmarks.create({
+          title: "E2E Favicon Consent",
+        });
+        await chrome.bookmarks.create({
+          parentId: root.id,
+          title: "Local Dashboard",
+          url,
+        });
+        await chrome.storage.sync.set({
+          "tabliss/config/data/default-speed-dial": {
+            rootBookmarkId: root.id,
+            tileSize: 64,
+            density: "comfortable",
+            showLabels: true,
+            maxLabelLength: 24,
+            layout: { orderByFolder: {}, parentByItem: {} },
+            favicons: {
+              consent: "ask",
+              source: "direct",
+              includeLocal: true,
+              concurrency: 2,
+              ttlDays: 30,
+            },
+          },
+        });
+      }, localUrl);
+      await page.setViewportSize({ width: 800, height: 720 });
+      await page.reload();
+
+      await expect(page.getByRole("dialog")).toContainText(
+        "Fetch icons for 1 bookmark?",
+      );
+      await page.getByRole("button", { name: "Allow and fetch icons" }).click();
+      await expect(page.locator(".SpeedDial__favicon")).toHaveCount(1);
+      expect(uiIconRequests).toBe(1);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        uiIconServer.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+
     expect(pageErrors).toEqual([]);
   } finally {
     await context.close();

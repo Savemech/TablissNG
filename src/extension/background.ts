@@ -5,7 +5,10 @@ import {
   BACKGROUND_HEALTH,
   type BackgroundResponse,
   FETCH_FAVICON,
+  FETCH_FAVICON_BATCH,
+  type FetchFaviconBatchMessage,
   isFetchFaviconMessage,
+  isFetchFaviconBatchMessage,
 } from "./messages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,11 +34,11 @@ async function handleFavicon(message: unknown): Promise<BackgroundResponse> {
   const now = Date.now();
   if (
     !message.force &&
-    existing?.status === "ready" &&
+    existing &&
     existing.pageUrl === pageUrl.href &&
     (existing.source === "manual-upload" ||
       existing.source === "manual-url" ||
-      (existing.expiresAt ?? 0) > now)
+      (existing.source === message.source && (existing.expiresAt ?? 0) > now))
   ) {
     return { ok: true, status: "cached" };
   }
@@ -75,6 +78,45 @@ async function handleFavicon(message: unknown): Promise<BackgroundResponse> {
   }
 }
 
+async function handleFaviconBatch(
+  message: FetchFaviconBatchMessage,
+): Promise<BackgroundResponse> {
+  const concurrency = Math.min(
+    12,
+    Math.max(1, Math.round(message.concurrency)),
+  );
+  let cursor = 0;
+  let completed = 0;
+  let failed = 0;
+
+  const worker = async (): Promise<void> => {
+    while (cursor < message.items.length) {
+      const item = message.items[cursor++];
+      try {
+        const response = await handleFavicon({
+          type: FETCH_FAVICON,
+          bookmarkId: item.bookmarkId,
+          pageUrl: item.pageUrl,
+          source: message.source,
+          ttlDays: message.ttlDays,
+          force: message.force,
+        });
+        if (response.ok) completed += 1;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, message.items.length) }, () =>
+      worker(),
+    ),
+  );
+  return { ok: true, status: "complete", completed, failed };
+}
+
 browser.runtime.onMessage.addListener((message: unknown) => {
   if (
     message &&
@@ -94,6 +136,23 @@ browser.runtime.onMessage.addListener((message: unknown) => {
     message.type === FETCH_FAVICON
   ) {
     return handleFavicon(message).catch((error: unknown) => ({
+      ok: false as const,
+      error: safeError(error),
+    }));
+  }
+  if (
+    message &&
+    typeof message === "object" &&
+    "type" in message &&
+    message.type === FETCH_FAVICON_BATCH
+  ) {
+    if (!isFetchFaviconBatchMessage(message)) {
+      return Promise.resolve<BackgroundResponse>({
+        ok: false,
+        error: "Invalid favicon batch request",
+      });
+    }
+    return handleFaviconBatch(message).catch((error: unknown) => ({
       ok: false as const,
       error: safeError(error),
     }));

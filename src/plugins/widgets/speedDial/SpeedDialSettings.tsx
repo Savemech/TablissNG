@@ -1,8 +1,21 @@
-import { type FC, useMemo } from "react";
-import { defineMessages, FormattedMessage } from "react-intl";
+import "./SpeedDialSettings.sass";
 
-import { type BookmarkNode, emptyLayout } from "./layout";
-import { defaultData, type Density, type Props } from "./types";
+import { type FC, useCallback, useEffect, useMemo, useState } from "react";
+import { defineMessages, FormattedMessage, useIntl } from "react-intl";
+
+import {
+  clearGeneratedFavicons,
+  getFaviconStoreStats,
+} from "../../../extension/favicon/store";
+import type { FaviconStoreStats } from "../../../extension/favicon/types";
+import { faviconTargets, requestFaviconPermissions } from "./faviconPolicy";
+import { type BookmarkNode, emptyLayout, indexBookmarks } from "./layout";
+import {
+  defaultData,
+  type Density,
+  type FaviconSettings,
+  type Props,
+} from "./types";
 import { useBookmarks } from "./useBookmarks";
 
 const messages = defineMessages({
@@ -15,6 +28,16 @@ const messages = defineMessages({
     id: "plugins.speedDial.settings.allow",
     defaultMessage: "Allow bookmark access",
     description: "Speed Dial settings bookmark permission button",
+  },
+  faviconPermissionError: {
+    id: "plugins.speedDial.settings.favicons.permissionError",
+    defaultMessage: "Icon access was not granted.",
+    description: "Favicon permission failure in Speed Dial settings",
+  },
+  faviconStorageError: {
+    id: "plugins.speedDial.settings.favicons.storageError",
+    defaultMessage: "Could not update the local icon cache.",
+    description: "Favicon cache failure in Speed Dial settings",
   },
 });
 
@@ -38,9 +61,96 @@ function folderOptionLabel(folder: FolderOption): string {
   return `${"\u00a0".repeat(folder.depth * 3)}${folder.label}`;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+}
+
 const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
+  const intl = useIntl();
   const { permission, requestPermission, tree } = useBookmarks(null);
+  const faviconSettings = data.favicons ?? defaultData.favicons;
+  const [faviconStats, setFaviconStats] = useState<FaviconStoreStats>();
+  const [faviconWorking, setFaviconWorking] = useState(false);
+  const [faviconError, setFaviconError] = useState<string>();
   const folders = useMemo(() => folderOptions(tree), [tree]);
+  const faviconNodes = useMemo(() => {
+    if (!tree) return [];
+    const all = indexBookmarks(tree);
+    const selected = data.rootBookmarkId
+      ? all.nodes.get(data.rootBookmarkId)
+      : tree;
+    return selected ? [...indexBookmarks(selected).nodes.values()] : [];
+  }, [data.rootBookmarkId, tree]);
+  const targets = useMemo(
+    () => faviconTargets(faviconNodes, faviconSettings),
+    [faviconNodes, faviconSettings.includeLocal, faviconSettings.source],
+  );
+
+  const updateFaviconStats = useCallback(async () => {
+    try {
+      setFaviconStats(await getFaviconStoreStats());
+    } catch {
+      setFaviconError(intl.formatMessage(messages.faviconStorageError));
+    }
+  }, [intl]);
+
+  useEffect(() => {
+    void updateFaviconStats();
+  }, [updateFaviconStats]);
+
+  const setFavicons = (favicons: FaviconSettings) => {
+    setData({ ...data, favicons });
+  };
+
+  const updatePermissionSensitiveSetting = (
+    patch: Partial<FaviconSettings>,
+  ) => {
+    setFavicons({
+      ...faviconSettings,
+      ...patch,
+      consent:
+        faviconSettings.consent === "enabled" ? "ask" : faviconSettings.consent,
+    });
+  };
+
+  const enableFavicons = async () => {
+    setFaviconWorking(true);
+    setFaviconError(undefined);
+    try {
+      const granted = await requestFaviconPermissions(
+        targets,
+        faviconSettings.source,
+      );
+      if (!granted) {
+        setFaviconError(intl.formatMessage(messages.faviconPermissionError));
+        return;
+      }
+      setFavicons({ ...faviconSettings, consent: "enabled" });
+    } catch (cause) {
+      setFaviconError(
+        cause instanceof Error
+          ? cause.message
+          : intl.formatMessage(messages.faviconPermissionError),
+      );
+    } finally {
+      setFaviconWorking(false);
+    }
+  };
+
+  const clearFaviconCache = async () => {
+    setFaviconWorking(true);
+    setFaviconError(undefined);
+    try {
+      await clearGeneratedFavicons();
+      await updateFaviconStats();
+    } catch {
+      setFaviconError(intl.formatMessage(messages.faviconStorageError));
+    } finally {
+      setFaviconWorking(false);
+    }
+  };
 
   return (
     <div className="SpeedDialSettings">
@@ -172,6 +282,176 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
           />
         </label>
       )}
+
+      <fieldset className="SpeedDialSettings__section">
+        <legend>
+          <FormattedMessage
+            id="plugins.speedDial.settings.favicons.title"
+            defaultMessage="Tile icons"
+            description="Speed Dial favicon settings title"
+          />
+        </legend>
+
+        <label>
+          <FormattedMessage
+            id="plugins.speedDial.favicons.source"
+            defaultMessage="Icon source"
+            description="Favicon source setting"
+          />
+          <select
+            value={faviconSettings.source}
+            onChange={(event) =>
+              updatePermissionSensitiveSetting({
+                source: event.target.value as FaviconSettings["source"],
+              })
+            }
+          >
+            <option value="direct">
+              <FormattedMessage
+                id="plugins.speedDial.favicons.source.direct"
+                defaultMessage="Fetch directly from each site"
+                description="Direct favicon source option"
+              />
+            </option>
+            <option value="duckduckgo">
+              <FormattedMessage
+                id="plugins.speedDial.favicons.source.duckduckgo"
+                defaultMessage="DuckDuckGo icon service"
+                description="DuckDuckGo favicon source option"
+              />
+            </option>
+            <option value="google">
+              <FormattedMessage
+                id="plugins.speedDial.favicons.source.google"
+                defaultMessage="Google favicon service"
+                description="Google favicon source option"
+              />
+            </option>
+          </select>
+        </label>
+
+        {faviconSettings.source === "direct" && (
+          <label>
+            <input
+              type="checkbox"
+              checked={faviconSettings.includeLocal}
+              onChange={(event) =>
+                updatePermissionSensitiveSetting({
+                  includeLocal: event.target.checked,
+                })
+              }
+            />
+            <FormattedMessage
+              id="plugins.speedDial.favicons.includeLocal"
+              defaultMessage="Include local and homelab addresses"
+              description="Toggle direct favicon fetching for local addresses"
+            />
+          </label>
+        )}
+
+        <label>
+          <FormattedMessage
+            id="plugins.speedDial.favicons.concurrency"
+            defaultMessage="Parallel requests: {count}"
+            description="Favicon concurrency setting"
+            values={{ count: faviconSettings.concurrency }}
+          />
+          <input
+            type="range"
+            min="1"
+            max="8"
+            value={faviconSettings.concurrency}
+            onChange={(event) =>
+              setFavicons({
+                ...faviconSettings,
+                concurrency: Number(event.target.value),
+              })
+            }
+          />
+        </label>
+
+        <label>
+          <FormattedMessage
+            id="plugins.speedDial.settings.favicons.ttl"
+            defaultMessage="Refresh automatically after {days} days"
+            description="Favicon cache TTL setting"
+            values={{ days: faviconSettings.ttlDays }}
+          />
+          <input
+            type="range"
+            min="1"
+            max="90"
+            value={faviconSettings.ttlDays}
+            onChange={(event) =>
+              setFavicons({
+                ...faviconSettings,
+                ttlDays: Number(event.target.value),
+              })
+            }
+          />
+        </label>
+
+        {faviconStats && (
+          <p className="info">
+            <FormattedMessage
+              id="plugins.speedDial.settings.favicons.cacheStats"
+              defaultMessage="Local cache: {ready} icons, {size}"
+              description="Favicon local cache statistics"
+              values={{
+                ready: faviconStats.ready,
+                size: formatBytes(faviconStats.bytes),
+              }}
+            />
+          </p>
+        )}
+
+        {faviconError && (
+          <p className="SpeedDialSettings__error" role="status">
+            {faviconError}
+          </p>
+        )}
+
+        <div className="SpeedDialSettings__actions">
+          {faviconSettings.consent === "enabled" ? (
+            <button
+              type="button"
+              disabled={faviconWorking}
+              onClick={() =>
+                setFavicons({ ...faviconSettings, consent: "disabled" })
+              }
+            >
+              <FormattedMessage
+                id="plugins.speedDial.settings.favicons.disable"
+                defaultMessage="Disable automatic fetching"
+                description="Disable automatic favicon fetching button"
+              />
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={faviconWorking || permission !== "granted"}
+              onClick={() => void enableFavicons()}
+            >
+              <FormattedMessage
+                id="plugins.speedDial.settings.favicons.enable"
+                defaultMessage="Allow automatic icons"
+                description="Enable automatic favicon fetching button"
+              />
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={faviconWorking}
+            onClick={() => void clearFaviconCache()}
+          >
+            <FormattedMessage
+              id="plugins.speedDial.settings.favicons.clear"
+              defaultMessage="Clear downloaded icons"
+              description="Clear generated favicon cache button"
+            />
+          </button>
+        </div>
+      </fieldset>
 
       <button
         type="button"

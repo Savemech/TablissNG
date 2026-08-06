@@ -10,6 +10,8 @@ import {
 } from "react";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 
+import FaviconConsent from "./FaviconConsent";
+import { faviconTargets, requestFaviconPermissions } from "./faviconPolicy";
 import {
   type BookmarkNode,
   getFolderItems,
@@ -18,6 +20,7 @@ import {
 } from "./layout";
 import { defaultData, type Props } from "./types";
 import { useBookmarks } from "./useBookmarks";
+import { useFavicons } from "./useFavicons";
 
 const messages = defineMessages({
   permissionTitle: {
@@ -61,6 +64,16 @@ const messages = defineMessages({
     defaultMessage: "Open folder {name}",
     description: "Accessible label for a Speed Dial folder",
   },
+  refreshFavicons: {
+    id: "plugins.speedDial.favicons.refresh",
+    defaultMessage: "Refresh tile icons",
+    description: "Refresh all Speed Dial favicons button",
+  },
+  faviconPermissionError: {
+    id: "plugins.speedDial.favicons.refreshPermissionError",
+    defaultMessage: "Icon access was not granted.",
+    description: "Favicon refresh permission denial",
+  },
 });
 
 type DropTarget = {
@@ -101,6 +114,33 @@ function fallbackColour(id: string): string {
   return `hsl(${Math.abs(hash) % 360} 55% 42%)`;
 }
 
+const BookmarkIcon: FC<{
+  bookmarkId: string;
+  faviconUrl?: string;
+  title: string;
+}> = ({ bookmarkId, faviconUrl, title }) => {
+  const [failed, setFailed] = useState(false);
+
+  return faviconUrl && !failed ? (
+    <img
+      className="SpeedDial__icon SpeedDial__favicon"
+      src={faviconUrl}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <span
+      className="SpeedDial__icon SpeedDial__initials"
+      style={{ backgroundColor: fallbackColour(bookmarkId) }}
+      aria-hidden="true"
+    >
+      {initials(title)}
+    </span>
+  );
+};
+
 function dropMode(
   event: DragEvent<HTMLDivElement>,
   item: BookmarkNode,
@@ -115,11 +155,13 @@ function dropMode(
 
 const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
   const intl = useIntl();
+  const faviconSettings = data.favicons ?? defaultData.favicons;
   const { error, loading, permission, refresh, requestPermission, tree } =
     useBookmarks(data.rootBookmarkId);
   const [path, setPath] = useState<string[]>([]);
   const [draggedId, setDraggedId] = useState<string>();
   const [dropTarget, setDropTarget] = useState<DropTarget>();
+  const [faviconPermissionError, setFaviconPermissionError] = useState(false);
   const draggedIdRef = useRef<string | undefined>(undefined);
 
   const updateDraggedId = (itemId?: string) => {
@@ -131,6 +173,20 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     () => (tree ? indexBookmarks(tree) : undefined),
     [tree],
   );
+  const bookmarkNodes = useMemo(
+    () => (bookmarkIndex ? [...bookmarkIndex.nodes.values()] : []),
+    [bookmarkIndex],
+  );
+  const faviconTargetList = useMemo(
+    () => faviconTargets(bookmarkNodes, faviconSettings),
+    [bookmarkNodes, faviconSettings.includeLocal, faviconSettings.source],
+  );
+  const {
+    error: faviconError,
+    fetching: fetchingFavicons,
+    iconUrls,
+    refreshAll: refreshFavicons,
+  } = useFavicons(faviconTargetList, faviconSettings);
   const activePath = useMemo(() => {
     if (!tree || !bookmarkIndex) return [];
     if (path[0] !== tree.id) return [tree.id];
@@ -208,6 +264,19 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     setDropTarget(undefined);
   };
 
+  const handleFaviconRefresh = async () => {
+    setFaviconPermissionError(false);
+    const granted = await requestFaviconPermissions(
+      faviconTargetList,
+      faviconSettings.source,
+    );
+    if (!granted) {
+      setFaviconPermissionError(true);
+      return;
+    }
+    await refreshFavicons(true);
+  };
+
   if (permission === "checking") return null;
 
   if (permission === "denied") {
@@ -243,7 +312,7 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     <section
       className={`SpeedDial SpeedDial--${data.density}`}
       style={style}
-      aria-busy={loading}
+      aria-busy={loading || fetchingFavicons}
     >
       <header className="SpeedDial__header">
         {activePath.length > 1 ? (
@@ -270,8 +339,33 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
           <span />
         )}
         <strong>{titleFor(currentFolder)}</strong>
-        <span className={loading ? "SpeedDial__loading" : undefined} />
+        <span className="SpeedDial__header-actions">
+          {faviconSettings.consent === "enabled" &&
+            faviconTargetList.length > 0 && (
+              <button
+                type="button"
+                className="SpeedDial__refresh"
+                aria-label={intl.formatMessage(messages.refreshFavicons)}
+                title={intl.formatMessage(messages.refreshFavicons)}
+                disabled={fetchingFavicons}
+                onClick={() => void handleFaviconRefresh()}
+              >
+                ↻
+              </button>
+            )}
+          {(loading || fetchingFavicons) && (
+            <span className="SpeedDial__loading" aria-hidden="true" />
+          )}
+        </span>
       </header>
+
+      {(faviconPermissionError || faviconError) && (
+        <p className="SpeedDial__inline-error" role="status">
+          {faviconPermissionError
+            ? intl.formatMessage(messages.faviconPermissionError)
+            : faviconError?.message}
+        </p>
+      )}
 
       <div
         className="SpeedDial__grid"
@@ -284,6 +378,7 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
           const label = truncate(title, data.maxLabelLength);
           const target =
             dropTarget?.itemId === item.id ? dropTarget.mode : null;
+          const faviconUrl = iconUrls.get(item.id);
 
           return (
             <div
@@ -316,13 +411,12 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
                 </button>
               ) : (
                 <a className="SpeedDial__link" href={item.url}>
-                  <span
-                    className="SpeedDial__icon SpeedDial__initials"
-                    style={{ backgroundColor: fallbackColour(item.id) }}
-                    aria-hidden="true"
-                  >
-                    {initials(title)}
-                  </span>
+                  <BookmarkIcon
+                    key={faviconUrl ?? "fallback"}
+                    bookmarkId={item.id}
+                    faviconUrl={faviconUrl}
+                    title={title}
+                  />
                   {data.showLabels && (
                     <span className="SpeedDial__label" title={title}>
                       {label}
@@ -339,6 +433,14 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
         <p className="SpeedDial__empty">
           <FormattedMessage {...messages.empty} />
         </p>
+      )}
+
+      {faviconSettings.consent === "ask" && faviconTargetList.length > 0 && (
+        <FaviconConsent
+          nodes={bookmarkNodes}
+          settings={faviconSettings}
+          onChange={(favicons) => setData({ ...data, favicons })}
+        />
       )}
     </section>
   );
