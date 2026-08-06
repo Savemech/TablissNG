@@ -2,19 +2,29 @@ import { fetchFavicon, fetchManualIcon } from "./favicon/fetch";
 import { getFavicon, putFavicon } from "./favicon/store";
 import type { FaviconRecord } from "./favicon/types";
 import {
+  refreshAllCalendarFeeds,
+  refreshCalendarFeedById,
+} from "./calendar/runtime";
+import {
   BACKGROUND_HEALTH,
   type BackgroundResponse,
+  CALENDAR_CACHE_UPDATED,
   FETCH_FAVICON,
   FETCH_FAVICON_BATCH,
   type FetchFaviconBatchMessage,
   isFetchFaviconMessage,
   isFetchFaviconBatchMessage,
+  isRefreshAllCalendarsMessage,
+  isRefreshCalendarFeedMessage,
+  REFRESH_ALL_CALENDARS,
+  REFRESH_CALENDAR_FEED,
 } from "./messages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const CALENDAR_ALARM = "fdial/calendar/periodic-refresh";
 
 function safeError(error: unknown): string {
-  return error instanceof Error ? error.message : "Favicon fetch failed";
+  return error instanceof Error ? error.message : "Background task failed";
 }
 
 async function handleFavicon(message: unknown): Promise<BackgroundResponse> {
@@ -128,6 +138,72 @@ async function handleFaviconBatch(
   return { ok: true, status: "complete", completed, failed };
 }
 
+async function notifyCalendarCache(feedIds: string[]): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: CALENDAR_CACHE_UPDATED,
+      feedIds,
+    });
+  } catch {
+    // No new-tab page is currently open. The next one hydrates from IndexedDB.
+  }
+}
+
+async function handleCalendarFeed(
+  message: unknown,
+): Promise<BackgroundResponse> {
+  if (!isRefreshCalendarFeedMessage(message)) {
+    return { ok: false, error: "Invalid calendar refresh request" };
+  }
+  try {
+    const result = await refreshCalendarFeedById(message.feedId, message.force);
+    return {
+      ok: true,
+      status: result.status === "ready" ? "calendar-ready" : "calendar-cached",
+      feedId: result.feedId,
+      eventCount: result.eventCount,
+    };
+  } finally {
+    await notifyCalendarCache([message.feedId]);
+  }
+}
+
+async function handleAllCalendars(
+  message: unknown,
+): Promise<BackgroundResponse> {
+  if (!isRefreshAllCalendarsMessage(message)) {
+    return { ok: false, error: "Invalid calendar refresh request" };
+  }
+  const result = await refreshAllCalendarFeeds(message.force);
+  await notifyCalendarCache(result.feedIds);
+  return {
+    ok: true,
+    status: "calendar-complete",
+    completed: result.completed,
+    failed: result.failed,
+  };
+}
+
+async function ensureCalendarAlarm(): Promise<void> {
+  await browser.alarms.create(CALENDAR_ALARM, {
+    delayInMinutes: 1,
+    periodInMinutes: 15,
+  });
+}
+
+browser.runtime.onInstalled.addListener(() => {
+  void ensureCalendarAlarm().catch(() => undefined);
+});
+browser.runtime.onStartup.addListener(() => {
+  void ensureCalendarAlarm().catch(() => undefined);
+});
+browser.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== CALENDAR_ALARM) return;
+  void refreshAllCalendarFeeds(false)
+    .then((result) => notifyCalendarCache(result.feedIds))
+    .catch(() => undefined);
+});
+
 browser.runtime.onMessage.addListener((message: unknown) => {
   if (
     message &&
@@ -164,6 +240,28 @@ browser.runtime.onMessage.addListener((message: unknown) => {
       });
     }
     return handleFaviconBatch(message).catch((error: unknown) => ({
+      ok: false as const,
+      error: safeError(error),
+    }));
+  }
+  if (
+    message &&
+    typeof message === "object" &&
+    "type" in message &&
+    message.type === REFRESH_CALENDAR_FEED
+  ) {
+    return handleCalendarFeed(message).catch((error: unknown) => ({
+      ok: false as const,
+      error: safeError(error),
+    }));
+  }
+  if (
+    message &&
+    typeof message === "object" &&
+    "type" in message &&
+    message.type === REFRESH_ALL_CALENDARS
+  ) {
+    return handleAllCalendars(message).catch((error: unknown) => ({
       ok: false as const,
       error: safeError(error),
     }));

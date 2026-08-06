@@ -52,6 +52,7 @@
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "feather-icons": "^4.29.2",
+    "ical.js": "^2.2.1",
     "in-browser-language": "^1.0.3",
     "nanoid": "^6.0.0",
     "normalize.css": "^8.0.1",

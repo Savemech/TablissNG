@@ -3,6 +3,9 @@ import type { AutomaticFaviconSource } from "./favicon/types";
 export const BACKGROUND_HEALTH = "fdial/background/health";
 export const FETCH_FAVICON = "fdial/favicon/fetch";
 export const FETCH_FAVICON_BATCH = "fdial/favicon/fetch-batch";
+export const REFRESH_CALENDAR_FEED = "fdial/calendar/refresh-feed";
+export const REFRESH_ALL_CALENDARS = "fdial/calendar/refresh-all";
+export const CALENDAR_CACHE_UPDATED = "fdial/calendar/cache-updated";
 
 export type BackgroundHealthMessage = { type: typeof BACKGROUND_HEALTH };
 
@@ -25,12 +28,45 @@ export type FetchFaviconBatchMessage = {
   force?: boolean;
 };
 
+export type RefreshCalendarFeedMessage = {
+  type: typeof REFRESH_CALENDAR_FEED;
+  feedId: string;
+  force?: boolean;
+};
+
+export type RefreshAllCalendarsMessage = {
+  type: typeof REFRESH_ALL_CALENDARS;
+  force?: boolean;
+};
+
+export type CalendarCacheUpdatedMessage = {
+  type: typeof CALENDAR_CACHE_UPDATED;
+  feedIds: string[];
+};
+
 export type ExtensionMessage =
-  BackgroundHealthMessage | FetchFaviconMessage | FetchFaviconBatchMessage;
+  | BackgroundHealthMessage
+  | FetchFaviconMessage
+  | FetchFaviconBatchMessage
+  | RefreshCalendarFeedMessage
+  | RefreshAllCalendarsMessage
+  | CalendarCacheUpdatedMessage;
 
 export type BackgroundResponse =
   | { ok: true; status: "healthy" | "ready" | "cached" }
   | { ok: true; status: "complete"; completed: number; failed: number }
+  | {
+      ok: true;
+      status: "calendar-ready" | "calendar-cached";
+      feedId: string;
+      eventCount: number;
+    }
+  | {
+      ok: true;
+      status: "calendar-complete";
+      completed: number;
+      failed: number;
+    }
   | { ok: false; error: string };
 
 export function isFetchFaviconMessage(
@@ -72,5 +108,29 @@ export function isFetchFaviconBatchMessage(
     Number.isFinite(candidate.ttlDays) &&
     typeof candidate.concurrency === "number" &&
     Number.isFinite(candidate.concurrency)
+  );
+}
+
+export function isRefreshCalendarFeedMessage(
+  message: unknown,
+): message is RefreshCalendarFeedMessage {
+  if (!message || typeof message !== "object") return false;
+  const candidate = message as Partial<RefreshCalendarFeedMessage>;
+  return (
+    candidate.type === REFRESH_CALENDAR_FEED &&
+    typeof candidate.feedId === "string" &&
+    candidate.feedId.length > 0 &&
+    (candidate.force === undefined || typeof candidate.force === "boolean")
+  );
+}
+
+export function isRefreshAllCalendarsMessage(
+  message: unknown,
+): message is RefreshAllCalendarsMessage {
+  if (!message || typeof message !== "object") return false;
+  const candidate = message as Partial<RefreshAllCalendarsMessage>;
+  return (
+    candidate.type === REFRESH_ALL_CALENDARS &&
+    (candidate.force === undefined || typeof candidate.force === "boolean")
   );
 }

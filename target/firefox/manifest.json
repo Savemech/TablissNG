@@ -24,7 +24,8 @@
   "permissions": [
     "storage",
     "search",
-    "identity"
+    "identity",
+    "alarms"
   ],
   "optional_permissions": [
     "bookmarks",
