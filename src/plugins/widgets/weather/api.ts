@@ -1,4 +1,5 @@
 import { hasDataCollectionPermissions } from "../../../extension/dataConsent";
+import { searchLocations } from "../../../location/geocoding";
 import { API } from "../../types";
 import { Cache, Coordinates, Data } from "./types";
 
@@ -74,15 +75,11 @@ export async function geocodeLocation(
 ): Promise<Coordinates | undefined> {
   if (!(await hasDataCollectionPermissions(["locationInfo"]))) return;
   try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1`;
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data?.results?.[0]) return;
-
+    const location = (await searchLocations(query, navigator.language))[0];
+    if (!location) return;
     return {
-      latitude: round(data.results[0].latitude),
-      longitude: round(data.results[0].longitude),
+      latitude: round(location.latitude),
+      longitude: round(location.longitude),
     };
   } catch {
     return;
