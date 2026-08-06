@@ -30,6 +30,7 @@ function createLoadedPlugin(config: Config): FC<LoadedPluginProps> {
       id={id}
       component={config.dashboardComponent}
       defaultData={config.defaultData}
+      cacheStrategy={config.cacheStrategy}
     />
   );
 

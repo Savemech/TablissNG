@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/giphy",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Giphy,
   settingsComponent: GiphySettings,
   supportsBackdrop: true,

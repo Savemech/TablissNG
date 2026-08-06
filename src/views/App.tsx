@@ -58,7 +58,9 @@ const Root: FC = () => {
     document.title = intl.formatMessage(messages.pageTitle);
   }, [intl]);
 
-  // Wait for storage to be ready before displaying
+  // Configuration controls the dashboard shape and must be ready before the
+  // first render. Cache hydration continues independently; only plugins that
+  // declare a cache dependency wait for it.
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const themePreference = useValue(db, "themePreference");
@@ -96,43 +98,44 @@ const Root: FC = () => {
         if (showError) setError(true);
       };
 
-    const subscriptions = Promise.all([
-      // Config database
-      dbStorage
-        .then((errors) =>
-          Stream.subscribe(
-            errors,
-            handleError(intl.formatMessage(messages.saveSettingsError), true),
-          ),
-        )
-        .catch(
-          handleError(intl.formatMessage(messages.openSettingsError), true),
-        ),
-      // Cache database
-      cacheStorage
-        .then((errors) =>
-          Stream.subscribe(
-            errors,
-            handleError(intl.formatMessage(messages.saveCacheWarning), false),
-          ),
-        )
-        .catch(
-          handleError(intl.formatMessage(messages.openCacheWarning), false),
-        ),
-    ]);
+    let mounted = true;
 
-    // Storage is ready
-    subscriptions.then(() => {
-      setReady(true);
-      migrate();
-    });
+    const configSubscription = dbStorage
+      .then((errors) =>
+        Stream.subscribe(
+          errors,
+          handleError(intl.formatMessage(messages.saveSettingsError), true),
+        ),
+      )
+      .catch(handleError(intl.formatMessage(messages.openSettingsError), true));
+
+    const cacheSubscription = cacheStorage
+      .then((errors) =>
+        Stream.subscribe(
+          errors,
+          handleError(intl.formatMessage(messages.saveCacheWarning), false),
+        ),
+      )
+      .catch(handleError(intl.formatMessage(messages.openCacheWarning), false));
+
+    // Migrations depend on configuration, but the first render does not need
+    // to wait for the independent cache storage.
+    configSubscription
+      .then(() => migrate())
+      .catch(handleError(intl.formatMessage(messages.openSettingsError), true))
+      .then(() => {
+        if (mounted) setReady(true);
+      });
 
     return () => {
+      mounted = false;
       // Remove error subscriptions
-      subscriptions.then(([dbSub, cacheSub]) => {
-        if (dbSub) dbSub();
-        if (cacheSub) cacheSub();
-      });
+      Promise.all([configSubscription, cacheSubscription]).then(
+        ([dbSub, cacheSub]) => {
+          if (dbSub) dbSub();
+          if (cacheSub) cacheSub();
+        },
+      );
     };
   }, [intl, pushError]);
 

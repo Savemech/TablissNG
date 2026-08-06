@@ -30,6 +30,7 @@ const config: Config = {
   key: "widget/topSites",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: TopSites,
   settingsComponent: TopSitesSettings,
   defaultData,

@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/joke",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Joke,
   settingsComponent: JokeSettings,
   defaultData,

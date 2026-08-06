@@ -53,9 +53,8 @@ const Widget: FC<Props> = ({ plugin, onMoveDown, onMoveUp, onRemove }) => {
   const [isOpen, toggleIsOpen] = useToggle(onRemove === undefined);
   const intl = useIntl();
 
-  const { defaultData, description, name, settingsComponent } = getConfig(
-    plugin.key,
-  );
+  const { cacheStrategy, defaultData, description, name, settingsComponent } =
+    getConfig(plugin.key);
 
   const setDisplay = setWidgetDisplay.bind(null, plugin.id);
 
@@ -117,6 +116,7 @@ const Widget: FC<Props> = ({ plugin, onMoveDown, onMoveUp, onRemove }) => {
                 id={plugin.id}
                 component={settingsComponent}
                 defaultData={defaultData}
+                cacheStrategy={cacheStrategy}
               />
             </div>
           )}

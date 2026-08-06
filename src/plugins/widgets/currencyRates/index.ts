@@ -23,6 +23,7 @@ const config: Config = {
   key: "widget/currencyRates",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: CurrencyRates,
   settingsComponent: CurrencyRatesSettings,
   defaultData,

@@ -46,4 +46,12 @@ export type Config = {
   readonly dashboardComponent: ComponentType<API<any, any>>;
   readonly settingsComponent?: ComponentType<API<any, any>>;
   readonly supportsBackdrop?: boolean;
+  /**
+   * Delay mounting the plugin until its persisted cache has been hydrated.
+   *
+   * Cache-backed plugins often fetch when `cache` is undefined. Mounting them
+   * before hydration can therefore start unnecessary network requests and let
+   * late storage reads overwrite fresh state.
+   */
+  readonly cacheStrategy?: "hydrate-before-mount";
 };

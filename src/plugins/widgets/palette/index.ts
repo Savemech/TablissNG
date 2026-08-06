@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/palette",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Palette,
   settingsComponent: PaletteSettings,
   defaultData,

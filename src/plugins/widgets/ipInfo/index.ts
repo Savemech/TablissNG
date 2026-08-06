@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/ipInfo",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: IpInfo,
   settingsComponent: IpInfoSettings,
   defaultData,

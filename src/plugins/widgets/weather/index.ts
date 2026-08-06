@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/weather",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Weather,
   settingsComponent: WeatherSettings,
   defaultData,

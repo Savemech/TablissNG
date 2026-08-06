@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/image", // not changing to /media for backwards compatibility.
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Media,
   settingsComponent: ImageSettings,
   supportsBackdrop: true,

@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/bitcoin",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: BitcoinWidget,
   settingsComponent: BitcoinSettings,
   defaultData,

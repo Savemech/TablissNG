@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/wikimedia",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Wikimedia,
   settingsComponent: WikimediaSettings,
   supportsBackdrop: true,

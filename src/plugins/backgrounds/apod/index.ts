@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/apod",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Apod,
   settingsComponent: ApodSettings,
   supportsBackdrop: true,

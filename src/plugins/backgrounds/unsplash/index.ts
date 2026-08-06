@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/unsplash",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Unsplash,
   settingsComponent: UnsplashSettings,
   supportsBackdrop: true,

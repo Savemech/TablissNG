@@ -30,6 +30,7 @@ const config: Config = {
   key: "widget/literature-clock",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: LiteratureClock,
   settingsComponent: LiteratureClockSettings,
   defaultData,

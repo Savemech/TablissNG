@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/trello",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Trello,
   settingsComponent: TrelloSettings,
   defaultData,

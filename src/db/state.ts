@@ -184,3 +184,13 @@ export const cacheStorage =
   BUILD_TARGET === "firefox"
     ? Storage.extension(cache, "tabliss/cache", "local")
     : Storage.indexeddb(cache, "tabliss/cache");
+
+/**
+ * A non-rejecting hydration barrier for cache-backed plugins. Storage errors
+ * are reported by App; plugins should still mount with an empty cache so they
+ * can recover by fetching fresh data.
+ */
+export const cacheReady = cacheStorage.then(
+  () => undefined,
+  () => undefined,
+);

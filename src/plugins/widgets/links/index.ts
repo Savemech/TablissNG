@@ -22,6 +22,7 @@ const config: Config = {
   key: "widget/links",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Links,
   settingsComponent: LinksSettings,
   defaultData,

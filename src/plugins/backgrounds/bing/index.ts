@@ -22,6 +22,7 @@ const config: Config = {
   key: "background/bing",
   name: messages.name,
   description: messages.description,
+  cacheStrategy: "hydrate-before-mount",
   dashboardComponent: Bing,
   settingsComponent: BingSettings,
   supportsBackdrop: true,

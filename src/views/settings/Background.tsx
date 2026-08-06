@@ -63,6 +63,7 @@ const Background: FC = () => {
                 id={data.id}
                 component={plugin.settingsComponent}
                 defaultData={plugin.defaultData}
+                cacheStrategy={plugin.cacheStrategy}
               />
             </div>
           )}
