@@ -1,0 +1,134 @@
+.Agenda
+  box-sizing: border-box
+  width: min(27rem, calc(100vw - 2rem))
+  max-height: min(30rem, calc(100vh - 4rem))
+  padding: 0.85rem 1rem
+  overflow-y: auto
+  border: 1px solid rgba(255, 255, 255, 0.12)
+  border-radius: 1rem
+  background: rgba(0, 0, 0, 0.2)
+  backdrop-filter: blur(8px)
+  contain: layout style
+
+  &__header
+    display: flex
+    align-items: flex-start
+    justify-content: space-between
+    gap: 1rem
+    margin-bottom: 0.65rem
+
+    strong, span
+      display: block
+
+  &__date
+    margin-top: 0.1rem
+    font-size: 0.78rem
+    opacity: 0.72
+
+  &__refresh
+    width: 1.8rem
+    height: 1.8rem
+    padding: 0
+    display: grid
+    place-items: center
+    border: 0
+    border-radius: 50%
+    color: inherit
+    background: rgba(255, 255, 255, 0.1)
+    font-size: 1.15rem
+    cursor: pointer
+
+    &:hover, &:focus-visible
+      background: rgba(255, 255, 255, 0.22)
+
+    &:disabled
+      opacity: 0.45
+      cursor: default
+
+  &__spinner
+    width: 0.65rem
+    height: 0.65rem
+    border: 2px solid currentColor
+    border-right-color: transparent
+    border-radius: 50%
+    animation: agenda-spin 700ms linear infinite
+
+  &__events
+    margin: 0
+    padding: 0
+    display: grid
+    gap: 0.28rem
+    list-style: none
+
+  &__event
+    min-width: 0
+    padding: 0.42rem 0.35rem
+    display: grid
+    grid-template-columns: 0.28rem 5.4rem minmax(0, 1fr)
+    align-items: start
+    gap: 0.55rem
+    border-radius: 0.55rem
+
+    &:hover, &:focus-within, &.is-ongoing
+      background: rgba(255, 255, 255, 0.1)
+
+  &__colour
+    width: 0.28rem
+    height: 100%
+    min-height: 1.6rem
+    border-radius: 0.2rem
+
+  &__time
+    padding-top: 0.05rem
+    font-size: 0.77rem
+    font-variant-numeric: tabular-nums
+    opacity: 0.82
+
+  &__details
+    min-width: 0
+
+  &__event-title
+    display: block
+    overflow: hidden
+    color: inherit
+    font-size: 0.9rem
+    font-weight: 600
+    line-height: 1.25
+    text-decoration: none
+    text-overflow: ellipsis
+    white-space: nowrap
+
+  &__location
+    display: block
+    overflow: hidden
+    margin-top: 0.08rem
+    font-size: 0.72rem
+    opacity: 0.65
+    text-overflow: ellipsis
+    white-space: nowrap
+
+  &__empty, &__warning, &__more
+    margin: 0.65rem 0 0
+    font-size: 0.8rem
+
+  &__empty
+    opacity: 0.75
+
+  &__more
+    text-align: right
+    opacity: 0.7
+
+  &__warning
+    color: #ffd0c9
+
+@keyframes agenda-spin
+  to
+    transform: rotate(360deg)
+
+@media (max-width: 420px)
+  .Agenda__event
+    grid-template-columns: 0.25rem 4.7rem minmax(0, 1fr)
+
+@media (prefers-reduced-motion: reduce)
+  .Agenda__spinner
+    animation-duration: 1.8s

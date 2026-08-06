@@ -179,6 +179,14 @@ if (BUILD_TARGET !== "web" && BUILD_TARGET !== "safari") {
       position: "bottomCentre",
     },
   };
+  initData["widget/default-agenda"] = {
+    id: "default-agenda",
+    key: "widget/agenda",
+    order: 3,
+    display: {
+      position: "topRight",
+    },
+  };
 }
 
 // Database storage

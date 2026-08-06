@@ -1,0 +1,60 @@
+.AgendaSettings
+  &__feeds
+    margin-top: 1.4rem
+    padding-top: 0.25rem
+    border-top: 1px solid var(--border-main)
+
+    h5
+      margin-bottom: 0.4rem
+
+  &__feed
+    position: relative
+    margin: 0.75rem 0
+    padding: 0.7rem
+    display: grid
+    grid-template-columns: 0.3rem minmax(0, 1fr)
+    gap: 0.45rem 0.65rem
+    border: 1px solid var(--border-main)
+    border-radius: 0.4rem
+
+    > label, > select
+      grid-column: 2
+      margin: 0
+
+  &__colour
+    grid-row: 1 / span 4
+    width: 0.3rem
+    border-radius: 0.2rem
+
+  &__feed-name
+    min-width: 0
+
+    strong, small
+      display: block
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+
+    small
+      margin-top: 0.1rem
+      color: var(--text-secondary)
+
+  &__feed-actions
+    grid-column: 2
+    display: flex
+    flex-wrap: wrap
+    gap: 0.45rem
+
+  &__add
+    margin-top: 1rem
+    padding-top: 0.75rem
+    border-top: 1px solid var(--border-light)
+
+  &__colour-input
+    display: flex !important
+    align-items: center
+    justify-content: space-between
+
+  &__error
+    color: #c63d35
+    font-size: 0.9em

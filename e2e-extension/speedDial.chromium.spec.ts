@@ -182,6 +182,40 @@ test("Speed Dial works in the installed Chromium extension", async () => {
 
     let uiIconRequests = 0;
     let manualIconRequests = 0;
+    let calendarRequests = 0;
+    const calendarDateParts = new Intl.DateTimeFormat("en", {
+      timeZone: "Europe/Madrid",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const calendarPart = (type: Intl.DateTimeFormatPartTypes) =>
+      calendarDateParts.find((part) => part.type === type)?.value ?? "";
+    const calendarDay = `${calendarPart("year")}${calendarPart("month")}${calendarPart("day")}`;
+    const calendarDate = new Date(
+      Date.UTC(
+        Number(calendarPart("year")),
+        Number(calendarPart("month")) - 1,
+        Number(calendarPart("day")) + 1,
+      ),
+    );
+    const nextCalendarDay = `${calendarDate.getUTCFullYear()}${String(
+      calendarDate.getUTCMonth() + 1,
+    ).padStart(2, "0")}${String(calendarDate.getUTCDate()).padStart(2, "0")}`;
+    const calendarBody = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "X-WR-CALNAME:E2E Calendar",
+      "BEGIN:VEVENT",
+      "UID:e2e-planning",
+      `DTSTART;VALUE=DATE:${calendarDay}`,
+      `DTEND;VALUE=DATE:${nextCalendarDay}`,
+      "SUMMARY:E2E Planning",
+      "LOCATION:Test Room",
+      "END:VEVENT",
+      "END:VCALENDAR",
+      "",
+    ].join("\r\n");
     const uiIconServer = createServer((request, response) => {
       if (request.url === "/favicon.ico") {
         uiIconRequests += 1;
@@ -193,6 +227,15 @@ test("Speed Dial works in the installed Chromium extension", async () => {
         manualIconRequests += 1;
         response.writeHead(200, { "content-type": "image/png" });
         response.end(icon);
+        return;
+      }
+      if (request.url === "/calendar.ics") {
+        calendarRequests += 1;
+        response.writeHead(200, {
+          "content-type": "text/calendar",
+          etag: '"e2e-calendar-v1"',
+        });
+        response.end(calendarBody);
         return;
       }
       response.writeHead(200, { "content-type": "text/html" });
@@ -286,6 +329,59 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       await page.getByRole("button", { name: "Reset icon" }).click();
       await expect.poll(storedSource).toBe("direct");
       expect(uiIconRequests).toBe(2);
+
+      const calendarUrl = `http://127.0.0.1:${address.port}/calendar.ics`;
+      await page.evaluate(async (feedUrl) => {
+        await chrome.storage.local.set({
+          "fdial/calendar/feeds": [
+            {
+              id: "e2e-calendar",
+              kind: "ical",
+              name: "E2E Calendar",
+              url: feedUrl,
+              colour: "#4f8cff",
+              enabled: true,
+              refreshMinutes: 30,
+              timeZone: "Europe/Madrid",
+            },
+          ],
+        });
+      }, calendarUrl);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            chrome.runtime.sendMessage({
+              type: "fdial/calendar/refresh-feed",
+              feedId: "e2e-calendar",
+              force: true,
+            }),
+          ),
+        )
+        .toEqual({
+          ok: true,
+          status: "calendar-ready",
+          feedId: "e2e-calendar",
+          eventCount: 1,
+        });
+      await expect(page.locator(".Agenda__event-title")).toHaveText(
+        "E2E Planning",
+      );
+      expect(calendarRequests).toBe(1);
+
+      await expect(
+        page.evaluate(() =>
+          chrome.runtime.sendMessage({
+            type: "fdial/calendar/refresh-feed",
+            feedId: "e2e-calendar",
+          }),
+        ),
+      ).resolves.toEqual({
+        ok: true,
+        status: "calendar-cached",
+        feedId: "e2e-calendar",
+        eventCount: 1,
+      });
+      expect(calendarRequests).toBe(1);
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),

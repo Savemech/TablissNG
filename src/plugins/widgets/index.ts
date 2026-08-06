@@ -1,5 +1,6 @@
 // import nba from "./nba";  TODO: FIX (IT'S BROKEN)
 // import randomMessage from "./randomMessage"; removed, use customText
+import agenda from "./agenda";
 import binarytime from "./binaryTime";
 import bitcoin from "./bitcoin";
 import bookmarks from "./bookmarks";
@@ -66,6 +67,7 @@ if (BUILD_TARGET === "web") {
   widgetConfigs.push(js);
 }
 if (BUILD_TARGET != "web" && BUILD_TARGET != "safari") {
+  widgetConfigs.push(agenda);
   widgetConfigs.push(speedDial);
   widgetConfigs.push(topSites);
   widgetConfigs.push(bookmarks);
