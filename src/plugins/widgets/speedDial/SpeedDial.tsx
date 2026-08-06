@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   type DragEvent,
   type FC,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -19,10 +20,12 @@ import {
 } from "./faviconPolicy";
 import {
   type BookmarkNode,
+  emptyLayout,
   getFolderItems,
   indexBookmarks,
   moveItem,
 } from "./layout";
+import { fromPortableLayout, toPortableLayout } from "./portableLayout";
 import { defaultData, type Props } from "./types";
 import { useBookmarks } from "./useBookmarks";
 import { useFavicons } from "./useFavicons";
@@ -229,23 +232,42 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
   const currentFolder = currentFolderId
     ? bookmarkIndex?.nodes.get(currentFolderId)
     : undefined;
+  const layout = useMemo(() => {
+    if (!tree) return emptyLayout();
+    return data.portableLayout
+      ? fromPortableLayout(tree, data.portableLayout)
+      : data.layout;
+  }, [data.layout, data.portableLayout, tree]);
   const items = useMemo(
     () =>
       tree && currentFolderId
-        ? getFolderItems(tree, currentFolderId, data.layout)
+        ? getFolderItems(tree, currentFolderId, layout)
         : [],
-    [currentFolderId, data.layout, tree],
+    [currentFolderId, layout, tree],
   );
+
+  useEffect(() => {
+    if (!tree || data.portableLayout) return;
+    setData({
+      ...data,
+      layout: emptyLayout(),
+      portableLayout: toPortableLayout(tree, data.layout),
+    });
+  }, [data, setData, tree]);
 
   const saveMove = (itemId: string, toFolderId: string, beforeId?: string) => {
     if (!tree || !currentFolderId) return;
-    const layout = moveItem(tree, data.layout, {
+    const nextLayout = moveItem(tree, layout, {
       itemId,
       fromFolderId: currentFolderId,
       toFolderId,
       beforeId,
     });
-    setData({ ...data, layout });
+    setData({
+      ...data,
+      layout: emptyLayout(),
+      portableLayout: toPortableLayout(tree, nextLayout),
+    });
   };
 
   const handleDragStart = (

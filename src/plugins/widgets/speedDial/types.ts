@@ -1,6 +1,10 @@
 import type { AutomaticFaviconSource } from "../../../extension/favicon/types";
 import type { API } from "../../types";
 import { emptyLayout, type LayoutOverlay } from "./layout";
+import {
+  emptyPortableLayout,
+  type PortableLayoutOverlay,
+} from "./portableLayout";
 
 export type Density = "compact" | "comfortable" | "spacious";
 
@@ -18,7 +22,9 @@ export type Data = {
   density: Density;
   showLabels: boolean;
   maxLabelLength: number;
+  /** Legacy, profile-local bookmark ids. Migrated after the tree is loaded. */
   layout: LayoutOverlay;
+  portableLayout?: PortableLayoutOverlay;
   favicons: FaviconSettings;
 };
 
@@ -31,6 +37,7 @@ export const defaultData: Data = {
   showLabels: true,
   maxLabelLength: 24,
   layout: emptyLayout(),
+  portableLayout: emptyPortableLayout(),
   favicons: {
     consent: "ask",
     source: "direct",

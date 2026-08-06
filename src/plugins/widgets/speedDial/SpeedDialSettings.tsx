@@ -10,6 +10,7 @@ import {
 import type { FaviconStoreStats } from "../../../extension/favicon/types";
 import { faviconTargets, requestFaviconPermissions } from "./faviconPolicy";
 import { type BookmarkNode, emptyLayout, indexBookmarks } from "./layout";
+import { emptyPortableLayout } from "./portableLayout";
 import {
   defaultData,
   type Density,
@@ -175,6 +176,7 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
                 ...data,
                 rootBookmarkId: event.target.value || null,
                 layout: emptyLayout(),
+                portableLayout: emptyPortableLayout(),
               })
             }
           >
@@ -455,7 +457,13 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
 
       <button
         type="button"
-        onClick={() => setData({ ...data, layout: emptyLayout() })}
+        onClick={() =>
+          setData({
+            ...data,
+            layout: emptyLayout(),
+            portableLayout: emptyPortableLayout(),
+          })
+        }
       >
         <FormattedMessage
           id="plugins.speedDial.settings.resetOrder"
