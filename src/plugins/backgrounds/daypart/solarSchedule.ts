@@ -158,6 +158,21 @@ export function orderedBoundaryMinutes(
   return result;
 }
 
+export function constrainBoundaryMinute(
+  daypart: Daypart,
+  minute: number,
+  minutes: Record<Daypart, number>,
+  minimumGap = DAYPART_MIN_GAP,
+): number {
+  const index = DAYPARTS.indexOf(daypart);
+  const minimum = index === 0 ? 0 : minutes[DAYPARTS[index - 1]] + minimumGap;
+  const maximum =
+    index === DAYPARTS.length - 1
+      ? 24 * 60 - 1
+      : minutes[DAYPARTS[index + 1]] - minimumGap;
+  return clamp(Math.round(minute), minimum, Math.max(minimum, maximum));
+}
+
 export function offsetForBoundaryMinute(
   minute: number,
   anchorMinute: number,

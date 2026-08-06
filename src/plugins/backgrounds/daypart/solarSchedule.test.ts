@@ -1,6 +1,7 @@
 import { defaultDaypartSchedule, timeToMinutes } from "./model";
 import { resolveDaypartRuntime } from "./runtime";
 import {
+  constrainBoundaryMinute,
   defaultSolarBoundaries,
   normaliseSolarSchedule,
   offsetForBoundaryMinute,
@@ -86,5 +87,8 @@ describe("solar daypart schedule", () => {
       }),
     ).toEqual({ morning: 800, day: 815, evening: 830, night: 845 });
     expect(offsetForBoundaryMinute(20 * 60, 21 * 60)).toBe(-60);
+    const boundaries = { morning: 360, day: 660, evening: 1020, night: 1320 };
+    expect(constrainBoundaryMinute("evening", 650, boundaries)).toBe(675);
+    expect(constrainBoundaryMinute("evening", 1400, boundaries)).toBe(1305);
   });
 });

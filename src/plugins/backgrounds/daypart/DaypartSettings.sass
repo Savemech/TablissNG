@@ -1,4 +1,180 @@
 .DaypartSettings
+    .info
+        line-height: 1.45
+
+    &__mode
+        display: grid
+        grid-template-columns: 1fr 1fr
+        gap: 0.4rem
+        margin: 0.8rem 0
+
+        label
+            margin: 0 !important
+            padding: 0.65rem 0.55rem
+            border: 1px solid var(--border-main)
+            border-radius: 0.45rem
+            background: var(--bg-input)
+            cursor: pointer
+            text-align: center
+            transition: border-color 0.15s ease, background 0.15s ease
+
+            &.is-selected
+                border-color: var(--accent-color)
+                background: color-mix(in srgb, var(--accent-color), transparent 88%)
+
+        input
+            width: auto !important
+
+    &__location
+        margin: 0.8rem 0 1rem
+        padding: 0.7rem
+        border: 1px solid var(--border-main)
+        border-radius: 0.5rem
+        background: var(--bg-secondary)
+
+        form > label
+            margin: 0 0 0.35rem
+            font-weight: 600
+
+    &__search-row
+        display: grid
+        grid-template-columns: 1fr auto
+        align-items: center
+        gap: 0.45rem
+
+        input
+            margin: 0 !important
+
+        button
+            flex: none
+
+            &:disabled
+                opacity: 0.55
+                cursor: wait
+
+    &__selected-location
+        display: flex
+        flex-direction: column
+        gap: 0.1rem
+        margin-top: 0.6rem
+        padding: 0.5rem 0.6rem
+        border-left: 3px solid var(--accent-color)
+        background: var(--bg-main)
+
+        strong
+            color: var(--text-heading)
+
+        span
+            color: var(--text-secondary)
+            font-size: 0.78em
+
+    &__location-results
+        margin: 0.5rem 0 0
+        padding: 0
+        overflow: hidden
+        border: 1px solid var(--border-main)
+        border-radius: 0.35rem
+        list-style: none
+
+        li + li
+            border-top: 1px solid var(--border-light)
+
+        button
+            width: 100%
+            padding: 0.55rem
+            display: flex
+            flex-direction: column
+            gap: 0.1rem
+            border: 0
+            color: var(--text-main)
+            background: var(--bg-main)
+            cursor: pointer
+            text-align: left
+
+            &:hover, &:focus-visible
+                background: var(--bg-input)
+                outline: none
+
+            strong
+                color: var(--text-heading)
+
+            span
+                color: var(--text-secondary)
+                font-size: 0.78em
+
+    &__status
+        margin: 0.55rem 0 0
+        font-size: 0.82em
+
+        &.is-warning
+            color: #c2410c
+
+    &__privacy-note
+        margin: 0.6rem 0 0
+        color: var(--text-secondary)
+        font-size: 0.76em
+        line-height: 1.35
+
+    &__preview
+        min-height: 8.5rem
+        margin-top: 1rem
+        padding: 1rem
+        display: flex
+        flex-direction: column
+        justify-content: center
+        align-items: center
+        overflow: hidden
+        border: 1px solid rgba(255, 255, 255, 0.28)
+        border-radius: 0.65rem
+        background-size: cover
+        background-position: center
+        box-shadow: 0 0.5rem 1.1rem var(--shadow-main)
+        text-align: center
+        transition: background-image 0.25s ease, color 0.25s ease
+
+        > span
+            font-size: 0.68em
+            font-weight: 700
+            letter-spacing: 0.14em
+            text-transform: uppercase
+
+        time
+            margin: 0.15rem 0
+            font-size: 2.6rem
+            font-variant-numeric: tabular-nums
+            font-weight: 300
+            line-height: 1
+
+        strong
+            font-size: 1.05rem
+
+        small
+            margin-top: 0.15rem
+
+    &__editor-actions
+        margin: 0.45rem 0 0.8rem
+        display: flex
+        flex-wrap: wrap
+        gap: 0.35rem
+
+        .button
+            padding: 0.38rem 0.65rem
+            font-size: 0.78em
+
+    &__solar-state
+        margin: 0.6rem 0
+        padding: 0.55rem 0.65rem
+        border-radius: 0.35rem
+        background: var(--bg-secondary)
+        font-size: 0.82em
+        line-height: 1.35
+
+        &--ready
+            border-left: 3px solid #10b981
+
+        &--missing-location, &--invalid-location, &--polar-day, &--polar-night, &--unavailable
+            border-left: 3px solid #f59e0b
+
     &__group
         margin: 0.9rem 0
         padding: 0.65rem
@@ -7,6 +183,7 @@
 
         legend
             padding: 0 0.3rem
+            color: var(--text-heading)
             font-weight: 600
 
     &__start
@@ -17,6 +194,54 @@
 
         input
             width: auto !important
+
+    &__solar-boundary
+        display: grid
+        grid-template-columns: minmax(0, 1fr) auto
+        align-items: end
+        gap: 0.35rem 0.6rem
+
+        label
+            margin: 0 !important
+            font-size: 0.8em
+
+        select
+            margin-bottom: 0 !important
+
+    &__offset
+        grid-column: 1 / -1
+
+        > div
+            display: grid
+            grid-template-columns: minmax(0, 1fr) 4.4rem
+            align-items: center
+            gap: 0.45rem
+
+        input
+            margin-bottom: 0 !important
+
+        input[type=range]
+            min-width: 0
+            width: 100%
+            accent-color: var(--accent-color)
+
+        input[type=number]
+            margin-top: 0.5em
+
+    &__effective-time
+        grid-column: 1 / -1
+        display: flex
+        align-items: baseline
+        justify-content: space-between
+        padding: 0.35rem 0.5rem
+        border-radius: 0.3rem
+        background: var(--bg-secondary)
+        font-size: 0.78em
+
+        strong
+            color: var(--text-heading)
+            font-size: 1.1em
+            font-variant-numeric: tabular-nums
 
     &__gallery
         margin-top: 0.65rem
@@ -36,6 +261,10 @@
         border-radius: 0.4rem
         background-size: cover
         cursor: pointer
+        transition: border-color 0.15s ease, transform 0.15s ease
+
+        &:hover
+            transform: translateY(-1px)
 
         &.is-selected
             border-color: var(--accent-color)
@@ -54,6 +283,182 @@
             font-size: 0.75em
             line-height: 1.2
 
-    @media (max-width: 430px)
+    &__config
+        margin-top: 1rem
+
+        summary
+            color: var(--accent-color)
+            cursor: pointer
+
+        textarea
+            min-height: 12rem
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace
+            font-size: 0.72em
+            line-height: 1.4
+            resize: vertical
+
+.DaypartTimeline
+    margin: 2.1rem 0.35rem 0
+    direction: ltr
+    user-select: none
+
+    &__track
+        position: relative
+        height: 3.25rem
+        border: 1px solid rgba(255, 255, 255, 0.28)
+        border-radius: 0.55rem
+        box-shadow: 0 0.22rem 0.7rem var(--shadow-main)
+        cursor: crosshair
+        touch-action: none
+
+    &__segment
+        position: absolute
+        top: 0
+        bottom: 0
+        overflow: hidden
+        background-size: cover
+        background-position: center
+        pointer-events: none
+
+        &:first-child
+            border-radius: 0.48rem 0 0 0.48rem
+
+        &:nth-child(5)
+            border-radius: 0 0.48rem 0.48rem 0
+
+    &__solar-tick
+        position: absolute
+        top: 0
+        bottom: 0
+        z-index: 2
+        width: 1px
+        border-left: 1px dashed rgba(255, 255, 255, 0.78)
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.85))
+        pointer-events: none
+
+    &__now
+        position: absolute
+        top: -0.3rem
+        bottom: -0.3rem
+        z-index: 3
+        width: 2px
+        background: #fff
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72)
+        pointer-events: none
+
+    &__playhead
+        position: absolute
+        top: -1rem
+        bottom: -0.45rem
+        z-index: 4
+        width: 2px
+        background: #ec4899
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8)
+        pointer-events: none
+
+        &::before
+            content: ""
+            position: absolute
+            top: -0.05rem
+            left: 50%
+            width: 0
+            height: 0
+            border: 0.32rem solid transparent
+            border-top-color: #ec4899
+            transform: translate(-50%, -35%)
+
+    &__handle
+        --daypart-handle: var(--accent-color)
+        position: absolute
+        top: 0
+        z-index: 5
+        width: 1.15rem
+        height: 100%
+        outline: none
+        cursor: ew-resize
+        touch-action: none
+        transform: translateX(-50%)
+
+        &::before
+            content: ""
+            position: absolute
+            top: 0
+            bottom: 0
+            left: 50%
+            width: 2px
+            background: var(--daypart-handle)
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72)
+            transform: translateX(-50%)
+
+        &:focus-visible .DaypartTimeline__handle-dot
+            box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--accent-color)
+
+        &.is-disabled
+            opacity: 0.55
+            cursor: not-allowed
+
+    &__handle-time
+        position: absolute
+        top: -1.35rem
+        left: 50%
+        padding: 0.12rem 0.22rem
+        border-radius: 0.2rem
+        color: #fff
+        background: rgba(0, 0, 0, 0.76)
+        font-size: 0.62rem
+        font-variant-numeric: tabular-nums
+        line-height: 1
+        pointer-events: none
+        transform: translateX(-50%)
+
+    &__handle-dot
+        position: absolute
+        top: 50%
+        left: 50%
+        width: 0.72rem
+        height: 0.72rem
+        border: 2px solid white
+        border-radius: 50%
+        background: var(--daypart-handle)
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72)
+        pointer-events: none
+        transform: translate(-50%, -50%)
+
+    &__hours
+        display: flex
+        justify-content: space-between
+        margin-top: 0.3rem
+        color: var(--text-secondary)
+        font-size: 0.65rem
+        font-variant-numeric: tabular-nums
+
+    &__solar-legend
+        display: grid
+        grid-template-columns: 1fr 1fr
+        gap: 0.18rem 0.65rem
+        margin: 0.5rem 0 0
+        padding: 0
+        color: var(--text-secondary)
+        font-size: 0.68rem
+        list-style: none
+
+        li
+            display: flex
+            justify-content: space-between
+            gap: 0.35rem
+
+        time
+            color: var(--text-heading)
+            font-variant-numeric: tabular-nums
+
+@media (prefers-reduced-motion: reduce)
+    .DaypartSettings__preview, .DaypartSettings__preset
+        transition: none
+
+@media (max-width: 430px)
+    .DaypartSettings
         &__gallery
             grid-template-columns: 1fr 1fr
+
+        &__mode
+            grid-template-columns: 1fr

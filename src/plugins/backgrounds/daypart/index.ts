@@ -13,7 +13,8 @@ const messages = defineMessages({
   },
   description: {
     id: "backgrounds.daypart.description",
-    defaultMessage: "Offline palettes that change with the time of day.",
+    defaultMessage:
+      "Offline palettes that follow the clock or your city's sun.",
     description: "Description of the time-aware daypart background",
   },
 });
