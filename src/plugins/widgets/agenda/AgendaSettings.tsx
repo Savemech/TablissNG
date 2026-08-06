@@ -23,6 +23,7 @@ import type {
   GoogleCalendarFeed,
   ICalFeed,
 } from "../../../extension/calendar/types";
+import { requestOptionalPermissions } from "../../../extension/dataConsent";
 import { permissionOriginForUrl } from "../../../extension/favicon/fetch";
 import {
   type BackgroundResponse,
@@ -83,14 +84,17 @@ function hostLabel(value: string): string {
 async function requestFeedPermission(url: string): Promise<boolean> {
   const origin = permissionOriginForUrl(url);
   if (!origin) return false;
-  return browser.permissions.request({ origins: [origin] });
+  return requestOptionalPermissions({ origins: [origin] }, [
+    "authenticationInfo",
+  ]);
 }
 
 async function requestCalendarPermission(feed: CalendarFeed): Promise<boolean> {
   if (feed.kind === "ical") return requestFeedPermission(feed.url);
-  return browser.permissions.request({
-    origins: [...GOOGLE_CALENDAR_PERMISSION_ORIGINS],
-  });
+  return requestOptionalPermissions(
+    { origins: [...GOOGLE_CALENDAR_PERMISSION_ORIGINS] },
+    ["authenticationInfo"],
+  );
 }
 
 const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {

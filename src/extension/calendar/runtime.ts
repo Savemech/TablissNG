@@ -1,4 +1,5 @@
 import { getCalendarFeedCache, putCalendarFeedCache } from "./cacheStore";
+import { hasDataCollectionPermissions } from "../dataConsent";
 import { getCalendarFeeds } from "./feedStore";
 import { refreshGoogleCalendarFeed } from "./googleRuntime";
 import { parseICalendar } from "./ical";
@@ -158,6 +159,9 @@ export async function refreshCalendarFeed(
   feed: CalendarFeed,
   force = false,
 ): Promise<CalendarRefreshResult> {
+  if (!(await hasDataCollectionPermissions(["authenticationInfo"]))) {
+    throw new Error("Calendar network access needs Firefox data consent");
+  }
   return feed.kind === "google"
     ? refreshGoogleCalendarFeed(feed, force)
     : refreshICalFeed(feed, force);

@@ -2,6 +2,7 @@ import {
   refreshAllCalendarFeeds,
   refreshCalendarFeedById,
 } from "./calendar/runtime";
+import { hasDataCollectionPermissions } from "./dataConsent";
 import { fetchFavicon, fetchManualIcon } from "./favicon/fetch";
 import { getFavicon, putFavicon } from "./favicon/store";
 import type { FaviconRecord } from "./favicon/types";
@@ -48,6 +49,16 @@ async function handleFavicon(message: unknown): Promise<BackgroundResponse> {
         message.source === "manual-url"
           ? "The bookmark URL is invalid"
           : "Only HTTP(S) bookmark URLs are supported",
+    };
+  }
+
+  if (
+    message.source !== "manual-url" &&
+    !(await hasDataCollectionPermissions(["bookmarksInfo"]))
+  ) {
+    return {
+      ok: false,
+      error: "Automatic favicons need Firefox bookmark-data consent",
     };
   }
 

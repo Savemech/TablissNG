@@ -2,6 +2,7 @@ import {
   isLocalPageUrl,
   permissionOriginForUrl,
 } from "../../../extension/favicon/fetch";
+import { requestOptionalPermissions } from "../../../extension/dataConsent";
 import type { AutomaticFaviconSource } from "../../../extension/favicon/types";
 import type { BookmarkNode } from "./layout";
 import type { FaviconSettings } from "./types";
@@ -58,7 +59,7 @@ export async function requestFaviconPermissions(
 ): Promise<boolean> {
   const origins = faviconPermissionOrigins(targets, source);
   if (origins.length === 0) return true;
-  return browser.permissions.request({ origins });
+  return requestOptionalPermissions({ origins }, ["bookmarksInfo"]);
 }
 
 export async function requestManualIconPermission(

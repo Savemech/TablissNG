@@ -11,6 +11,7 @@ import {
   GOOGLE_CALENDAR_PERMISSION_ORIGINS,
   googleOAuthRedirectUrl,
 } from "../../../extension/calendar/googleAuth";
+import { requestOptionalPermissions } from "../../../extension/dataConsent";
 import type {
   GoogleCalendarFeed,
   GoogleCalendarInfo,
@@ -76,9 +77,10 @@ function safeError(cause: unknown, fallback: string): string {
 }
 
 async function requestGooglePermissions(): Promise<boolean> {
-  return browser.permissions.request({
-    origins: [...GOOGLE_CALENDAR_PERMISSION_ORIGINS],
-  });
+  return requestOptionalPermissions(
+    { origins: [...GOOGLE_CALENDAR_PERMISSION_ORIGINS] },
+    ["authenticationInfo"],
+  );
 }
 
 const GoogleCalendarSettings: FC<Props> = ({ feeds, canAdd, onSave }) => {
