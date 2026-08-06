@@ -1,9 +1,10 @@
 import "./LocationInput.sass";
 
 import { Icon } from "@iconify/react";
-import { type FC, type FormEvent, useState } from "react";
+import { type FC, type FormEvent, useRef, useState } from "react";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 
+import { requestDataCollectionPermissions } from "../../../extension/dataConsent";
 import { useToggle } from "../../../hooks";
 import { geocodeLocation, requestLocation } from "./api";
 import { Coordinates } from "./types";
@@ -56,8 +57,9 @@ const GeocodeInput: FC<Props> = ({ onChange }) => {
   const [query, setQuery] = useState("");
   const intl = useIntl();
 
-  const handleGeocode = (event: FormEvent) => {
+  const handleGeocode = async (event: FormEvent) => {
     event.preventDefault();
+    if (!(await requestDataCollectionPermissions(["locationInfo"]))) return;
     geocodeLocation(query)
       .then((coords) => onChange({ ...coords, name: query }))
       .catch(() => {
@@ -94,8 +96,10 @@ const geolocationAvailable = "geolocation" in navigator;
 
 const CoordinateInput: FC<Props> = ({ latitude, longitude, onChange }) => {
   const intl = useIntl();
+  const consentRef = useRef<true | Promise<boolean> | undefined>(undefined);
 
-  const handleLocate = () => {
+  const handleLocate = async () => {
+    if (!(await requestDataCollectionPermissions(["locationInfo"]))) return;
     requestLocation()
       .then(onChange)
       .catch((err) =>
@@ -105,6 +109,24 @@ const CoordinateInput: FC<Props> = ({ latitude, longitude, onChange }) => {
           }),
         ),
       );
+  };
+
+  const changeCoordinates = (coordinates: Coordinates) => {
+    if (consentRef.current === true) {
+      onChange(coordinates);
+      return;
+    }
+    const consent =
+      consentRef.current ?? requestDataCollectionPermissions(["locationInfo"]);
+    consentRef.current = consent;
+    void consent
+      .then((granted) => {
+        consentRef.current = granted ? true : undefined;
+        if (granted) onChange(coordinates);
+      })
+      .catch(() => {
+        consentRef.current = undefined;
+      });
   };
 
   return (
@@ -133,7 +155,7 @@ const CoordinateInput: FC<Props> = ({ latitude, longitude, onChange }) => {
           type="text"
           value={latitude}
           onChange={(event) =>
-            onChange({ latitude: Number(event.target.value) })
+            changeCoordinates({ latitude: Number(event.target.value) })
           }
         />
 
@@ -143,7 +165,7 @@ const CoordinateInput: FC<Props> = ({ latitude, longitude, onChange }) => {
           type="text"
           value={longitude}
           onChange={(event) =>
-            onChange({ longitude: Number(event.target.value) })
+            changeCoordinates({ longitude: Number(event.target.value) })
           }
         />
 

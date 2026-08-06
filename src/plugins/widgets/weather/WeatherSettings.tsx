@@ -1,12 +1,22 @@
 import { FC } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import { requestDataCollectionPermissions } from "../../../extension/dataConsent";
 import { pluginMessages } from "../../../locales/messages";
 import LocationInput from "./LocationInput";
 import { defaultData, Props } from "./types";
 
 const WeatherSettings: FC<Props> = ({ data = defaultData, setData }) => {
   const intl = useIntl();
+  const changeAutoUpdate = async (autoUpdate: boolean) => {
+    if (
+      autoUpdate &&
+      !(await requestDataCollectionPermissions(["locationInfo"]))
+    ) {
+      return;
+    }
+    setData({ ...data, autoUpdate });
+  };
   return (
     <div className="WeatherSettings">
       <LocationInput
@@ -19,9 +29,7 @@ const WeatherSettings: FC<Props> = ({ data = defaultData, setData }) => {
         <input
           type="checkbox"
           checked={data.autoUpdate || false}
-          onChange={(event) =>
-            setData({ ...data, autoUpdate: event.target.checked })
-          }
+          onChange={(event) => void changeAutoUpdate(event.target.checked)}
         />
         <FormattedMessage
           id="plugins.weather.autoUpdate"

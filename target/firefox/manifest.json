@@ -14,7 +14,9 @@
         ],
         "optional": [
           "authenticationInfo",
-          "bookmarksInfo"
+          "bookmarksInfo",
+          "locationInfo",
+          "searchTerms"
         ]
       }
     },

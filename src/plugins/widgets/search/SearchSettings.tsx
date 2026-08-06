@@ -1,12 +1,22 @@
 import { FC } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
+import { requestDataCollectionPermissions } from "../../../extension/dataConsent";
 import { engines } from "./engines";
 import { messages } from "./Search";
 import { defaultData, Props, SEARCH_ENGINE_CUSTOM, SearchStyle } from "./types";
 
 const SearchSettings: FC<Props> = ({ data = defaultData, setData }) => {
   const intl = useIntl();
+  const changeSuggestionsProvider = async (suggestionsEngine: string) => {
+    if (
+      suggestionsEngine &&
+      !(await requestDataCollectionPermissions(["searchTerms"]))
+    ) {
+      return;
+    }
+    setData({ ...data, suggestionsEngine });
+  };
 
   return (
     <div className="SearchSettings">
@@ -190,7 +200,7 @@ const SearchSettings: FC<Props> = ({ data = defaultData, setData }) => {
         />
         <select
           onChange={(event) =>
-            setData({ ...data, suggestionsEngine: event.target.value })
+            void changeSuggestionsProvider(event.target.value)
           }
           value={data.suggestionsEngine}
         >

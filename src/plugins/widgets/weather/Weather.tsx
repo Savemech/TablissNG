@@ -5,6 +5,7 @@ import type { FC } from "react";
 import { useEffect } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
+import { hasDataCollectionPermissions } from "../../../extension/dataConsent";
 import { useCachedEffect, useTime } from "../../../hooks";
 import { HOURS } from "../../../utils";
 import { getForecast, requestLocation } from "./api";
@@ -56,8 +57,10 @@ const Weather: FC<Props> = ({
 
   useEffect(() => {
     if (data.autoUpdate) {
-      requestLocation()
+      void hasDataCollectionPermissions(["locationInfo"])
+        .then((granted) => (granted ? requestLocation() : undefined))
         .then((coords) => {
+          if (!coords) return;
           if (
             coords.latitude !== data.latitude ||
             coords.longitude !== data.longitude

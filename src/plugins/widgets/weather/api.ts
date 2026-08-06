@@ -1,3 +1,4 @@
+import { hasDataCollectionPermissions } from "../../../extension/dataConsent";
 import { API } from "../../types";
 import { Cache, Coordinates, Data } from "./types";
 
@@ -11,6 +12,7 @@ export async function getForecast(
   if (!latitude || !longitude) {
     return;
   }
+  if (!(await hasDataCollectionPermissions(["locationInfo"]))) return;
 
   loader.push();
   const url =
@@ -70,6 +72,7 @@ export function requestLocation(): Promise<Coordinates> {
 export async function geocodeLocation(
   query: string,
 ): Promise<Coordinates | undefined> {
+  if (!(await hasDataCollectionPermissions(["locationInfo"]))) return;
   try {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1`;
     const res = await fetch(url);

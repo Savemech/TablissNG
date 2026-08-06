@@ -9,6 +9,10 @@ import type {
 import { FC, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
+import {
+  hasDataCollectionPermissions,
+  requestDataCollectionPermissions,
+} from "../../../extension/dataConsent";
 import { useKeyPress } from "../../../hooks";
 import { isSpecialUrl } from "../../../utils/url";
 import {
@@ -61,12 +65,19 @@ const Search: FC<Props> = ({ data = defaultData }) => {
     previousValue.current = event.target.value;
 
     if (data.suggestionsEngine === "wikipedia") {
-      // Use Wikipedia API for suggestions
-      const url = `https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(event.target.value)}&limit=10`;
-      getWikipediaSuggestions(event.target.value, url).then((suggestions) => {
-        setSuggestions(suggestions.slice(0, data.suggestionsQuantity));
-        setActive(undefined);
-      });
+      const query = event.target.value;
+      const url = `https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(query)}&limit=10`;
+      void hasDataCollectionPermissions(["searchTerms"])
+        .then((granted) => {
+          if (!granted || query !== previousValue.current) return undefined;
+          return getWikipediaSuggestions(query, url);
+        })
+        .then((nextSuggestions) => {
+          if (!nextSuggestions || query !== previousValue.current) return;
+          setSuggestions(nextSuggestions.slice(0, data.suggestionsQuantity));
+          setActive(undefined);
+        })
+        .catch(() => setSuggestions(undefined));
     } else if (BUILD_TARGET === "web") {
       const suggestUrl = getSuggestUrl(data.suggestionsEngine);
       if (suggestUrl) {
@@ -127,15 +138,15 @@ const Search: FC<Props> = ({ data = defaultData }) => {
     } else {
       searchInput.current!.value = suggestion.title;
     }
-    search();
+    void search();
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    search();
+    void search();
   };
 
-  const search = () => {
+  const search = async () => {
     const query = searchInput.current!.value;
     const url = buildUrl(
       query,
@@ -159,6 +170,8 @@ const Search: FC<Props> = ({ data = defaultData }) => {
       }
       return;
     }
+
+    if (!(await requestDataCollectionPermissions(["searchTerms"]))) return;
 
     // If it's the default search engine and not a special URL, use browser search
     if (data.searchEngine === "default" && BUILD_TARGET !== "web") {
