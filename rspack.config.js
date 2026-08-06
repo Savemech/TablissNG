@@ -21,7 +21,6 @@ const googleCalendarClientId =
 const { version } = require("./package.json");
 
 const entry = {
-  polyfills: "./src/polyfills.ts",
   main: ["normalize.css", "./src/styles.sass", "./src/main.tsx"],
 };
 if (!isWeb && buildTarget !== "safari") {
@@ -167,7 +166,7 @@ const config = {
     }),
     new rspack.HtmlRspackPlugin({
       template: "./target/index.html",
-      chunks: ["polyfills", "main"],
+      chunks: ["main"],
       templateParameters: () => ({
         themeColorMeta: isWeb
           ? '<meta name="theme-color" content="#3498db" />'

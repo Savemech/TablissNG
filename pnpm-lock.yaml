@@ -15,9 +15,6 @@ importers:
       '@iconify/react':
         specifier: ^6.0.2
         version: 6.0.2(react@19.2.7)
-      core-js:
-        specifier: ^3.49.0
-        version: 3.49.0
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -103,9 +100,6 @@ importers:
       '@rstest/core':
         specifier: ^0.11.2
         version: 0.11.2(core-js@3.49.0)
-      '@types/core-js':
-        specifier: ~2.5.8
-        version: 2.5.8
       '@types/feather-icons':
         specifier: ~4.29.4
         version: 4.29.4
@@ -2757,9 +2751,6 @@ packages:
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
-
-  '@types/core-js@2.5.8':
-    resolution: {integrity: sha512-VgnAj6tIAhJhZdJ8/IpxdatM8G4OD3VWGlp6xIxUGENZlpbob9Ty4VVdC1FIEp0aK6DBscDDjyzy5FB60TuNqg==}
 
   '@types/debug@4.1.13':
     resolution: {integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==}
@@ -11157,8 +11148,6 @@ snapshots:
   '@types/connect@3.4.38':
     dependencies:
       '@types/node': 26.1.1
-
-  '@types/core-js@2.5.8': {}
 
   '@types/debug@4.1.13':
     dependencies:

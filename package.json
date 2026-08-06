@@ -59,7 +59,6 @@
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
-    "core-js": "^3.49.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "feather-icons": "^4.29.2",
@@ -90,7 +89,6 @@
     "@rspack/dev-server": "2.1.0",
     "@rspack/plugin-react-refresh": "^2.0.2",
     "@rstest/core": "^0.11.2",
-    "@types/core-js": "~2.5.8",
     "@types/feather-icons": "~4.29.4",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
