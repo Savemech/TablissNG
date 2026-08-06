@@ -1,6 +1,7 @@
 import type { AutomaticFaviconSource } from "../../../extension/favicon/types";
 import type { API } from "../../types";
 import { emptyLayout, type LayoutOverlay } from "./layout";
+import type { PortableFolderSelector } from "./portableFolder";
 import {
   emptyPortableLayout,
   type PortableLayoutOverlay,
@@ -18,6 +19,7 @@ export type FaviconSettings = {
 
 export type Data = {
   rootBookmarkId: string | null;
+  rootBookmarkSelector?: PortableFolderSelector | null;
   tileSize: number;
   density: Density;
   showLabels: boolean;
@@ -32,6 +34,7 @@ export type Props = API<Data>;
 
 export const defaultData: Data = {
   rootBookmarkId: null,
+  rootBookmarkSelector: null,
   tileSize: 64,
   density: "comfortable",
   showLabels: true,

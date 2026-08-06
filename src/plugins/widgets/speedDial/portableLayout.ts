@@ -32,11 +32,11 @@ export function emptyPortableLayout(): PortableLayoutOverlay {
   };
 }
 
-function normaliseTitle(title: string): string {
+export function normalisePortableTitle(title: string): string {
   return title.trim().normalize("NFKC").toLowerCase();
 }
 
-function normaliseUrl(url: string): string {
+export function normalisePortableUrl(url: string): string {
   try {
     return new URL(url).href;
   } catch {
@@ -45,12 +45,12 @@ function normaliseUrl(url: string): string {
 }
 
 function nodeIdentity(node: BookmarkNode): string {
-  if (node.url) return `b:${normaliseUrl(node.url)}`;
-  return `f:${normaliseTitle(node.title)}`;
+  if (node.url) return `b:${normalisePortableUrl(node.url)}`;
+  return `f:${normalisePortableTitle(node.title)}`;
 }
 
 /** Two independent 32-bit hashes keep synced keys short without silent moves. */
-function fingerprint(identity: string): string {
+export function portableFingerprint(identity: string): string {
   let first = 0x811c9dc5;
   let second = 0x9e3779b9;
   for (let index = 0; index < identity.length; index += 1) {
@@ -72,7 +72,7 @@ export function indexPortableBookmarks(
   const candidatesByKey = new Map<string, string[]>();
 
   const add = (id: string, identity: string): void => {
-    const key = identity === "$root" ? "root" : fingerprint(identity);
+    const key = identity === "$root" ? "root" : portableFingerprint(identity);
     keyById.set(id, key);
     const candidates = candidatesByKey.get(key) ?? [];
     candidates.push(id);

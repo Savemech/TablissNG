@@ -10,6 +10,10 @@ import {
 import type { FaviconStoreStats } from "../../../extension/favicon/types";
 import { faviconTargets, requestFaviconPermissions } from "./faviconPolicy";
 import { type BookmarkNode, emptyLayout, indexBookmarks } from "./layout";
+import {
+  createPortableFolderSelector,
+  resolvePortableFolder,
+} from "./portableFolder";
 import { emptyPortableLayout } from "./portableLayout";
 import {
   defaultData,
@@ -76,14 +80,17 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
   const [faviconWorking, setFaviconWorking] = useState(false);
   const [faviconError, setFaviconError] = useState<string>();
   const folders = useMemo(() => folderOptions(tree), [tree]);
+  const selectedRoot = useMemo(() => {
+    if (!tree || !data.rootBookmarkId) return tree;
+    if (data.rootBookmarkSelector) {
+      return resolvePortableFolder(tree, data.rootBookmarkSelector);
+    }
+    return indexBookmarks(tree).nodes.get(data.rootBookmarkId);
+  }, [data.rootBookmarkId, data.rootBookmarkSelector, tree]);
+  const selectedRootId = data.rootBookmarkId ? (selectedRoot?.id ?? "") : "";
   const faviconNodes = useMemo(() => {
-    if (!tree) return [];
-    const all = indexBookmarks(tree);
-    const selected = data.rootBookmarkId
-      ? all.nodes.get(data.rootBookmarkId)
-      : tree;
-    return selected ? [...indexBookmarks(selected).nodes.values()] : [];
-  }, [data.rootBookmarkId, tree]);
+    return selectedRoot ? [...indexBookmarks(selectedRoot).nodes.values()] : [];
+  }, [selectedRoot]);
   const targets = useMemo(
     () => faviconTargets(faviconNodes, faviconSettings),
     [faviconNodes, faviconSettings.includeLocal, faviconSettings.source],
@@ -170,15 +177,21 @@ const SpeedDialSettings: FC<Props> = ({ data = defaultData, setData }) => {
             description="Speed Dial root bookmark folder setting"
           />
           <select
-            value={data.rootBookmarkId ?? ""}
-            onChange={(event) =>
+            value={selectedRootId}
+            onChange={(event) => {
+              const rootBookmarkId = event.target.value || null;
               setData({
                 ...data,
-                rootBookmarkId: event.target.value || null,
+                rootBookmarkId,
+                rootBookmarkSelector:
+                  tree && rootBookmarkId
+                    ? (createPortableFolderSelector(tree, rootBookmarkId) ??
+                      null)
+                    : null,
                 layout: emptyLayout(),
                 portableLayout: emptyPortableLayout(),
-              })
-            }
+              });
+            }}
           >
             <option value="">
               <FormattedMessage

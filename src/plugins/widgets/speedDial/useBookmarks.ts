@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BookmarkNode } from "./layout";
+import {
+  type PortableFolderSelector,
+  resolvePortableFolder,
+} from "./portableFolder";
 
 type PermissionState = "checking" | "denied" | "granted";
 
@@ -18,7 +22,10 @@ const permissionRequest: { permissions: ["bookmarks"] } = {
 };
 
 /** Live, permission-aware adapter around the WebExtension bookmarks API. */
-export function useBookmarks(rootId: string | null): BookmarksState {
+export function useBookmarks(
+  rootId: string | null,
+  rootSelector?: PortableFolderSelector | null,
+): BookmarksState {
   const [permission, setPermission] = useState<PermissionState>("checking");
   const [loading, setLoading] = useState(false);
   const [tree, setTree] = useState<BookmarkNode>();
@@ -31,12 +38,21 @@ export function useBookmarks(rootId: string | null): BookmarksState {
     setError(undefined);
 
     try {
-      const result = rootId
-        ? await browser.bookmarks.getSubTree(rootId)
-        : await browser.bookmarks.getTree();
-      if (!result[0]) throw new Error("Bookmark root was not found");
+      const result = rootSelector
+        ? await browser.bookmarks.getTree()
+        : rootId
+          ? await browser.bookmarks.getSubTree(rootId)
+          : await browser.bookmarks.getTree();
+      const browserRoot = result[0];
+      if (!browserRoot) throw new Error("Bookmark root was not found");
+      const selectedRoot = rootSelector
+        ? resolvePortableFolder(browserRoot, rootSelector)
+        : browserRoot;
+      if (!selectedRoot) {
+        throw new Error("The synced bookmark folder could not be matched");
+      }
       if (requestVersion === requestVersionRef.current) {
-        setTree(result[0]);
+        setTree(selectedRoot);
       }
     } catch (cause) {
       if (requestVersion === requestVersionRef.current) {
@@ -50,7 +66,7 @@ export function useBookmarks(rootId: string | null): BookmarksState {
     } finally {
       if (requestVersion === requestVersionRef.current) setLoading(false);
     }
-  }, [rootId]);
+  }, [rootId, rootSelector]);
 
   const checkPermission = useCallback(async (): Promise<void> => {
     const granted = await browser.permissions.contains(permissionRequest);

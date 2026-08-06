@@ -25,6 +25,7 @@ import {
   indexBookmarks,
   moveItem,
 } from "./layout";
+import { createPortableFolderSelectorFromSubtree } from "./portableFolder";
 import { fromPortableLayout, toPortableLayout } from "./portableLayout";
 import { defaultData, type Props } from "./types";
 import { useBookmarks } from "./useBookmarks";
@@ -170,7 +171,7 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
   const intl = useIntl();
   const faviconSettings = data.favicons ?? defaultData.favicons;
   const { error, loading, permission, refresh, requestPermission, tree } =
-    useBookmarks(data.rootBookmarkId);
+    useBookmarks(data.rootBookmarkId, data.rootBookmarkSelector);
   const [path, setPath] = useState<string[]>([]);
   const [draggedId, setDraggedId] = useState<string>();
   const [dropTarget, setDropTarget] = useState<DropTarget>();
@@ -247,11 +248,26 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
   );
 
   useEffect(() => {
-    if (!tree || data.portableLayout) return;
+    if (!tree) return;
+    const migrateLayout = !data.portableLayout;
+    const migrateRoot = Boolean(
+      data.rootBookmarkId && !data.rootBookmarkSelector,
+    );
+    if (!migrateLayout && !migrateRoot) return;
+
     setData({
       ...data,
-      layout: emptyLayout(),
-      portableLayout: toPortableLayout(tree, data.layout),
+      ...(migrateRoot
+        ? {
+            rootBookmarkSelector: createPortableFolderSelectorFromSubtree(tree),
+          }
+        : {}),
+      ...(migrateLayout
+        ? {
+            layout: emptyLayout(),
+            portableLayout: toPortableLayout(tree, data.layout),
+          }
+        : {}),
     });
   }, [data, setData, tree]);
 
