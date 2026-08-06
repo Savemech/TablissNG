@@ -1,18 +1,11 @@
 import "./BaseBackground.sass";
 
 import { Icon } from "@iconify/react";
-import {
-  type CSSProperties,
-  type FC,
-  Fragment,
-  memo,
-  type ReactNode,
-} from "react";
+import { type FC, Fragment, memo, type ReactNode } from "react";
 import { CrossFade } from "react-crossfade-simple";
 
-import { db } from "../../../db/state";
-import { useIsNight } from "../../../hooks";
-import { useValue } from "../../../lib/db/react";
+import { usePublishBackgroundAppearance } from "../../../backgroundAppearance";
+import { useBackdropPresentation } from "./useBackdrop";
 
 interface CreditLink {
   label: ReactNode;
@@ -32,6 +25,7 @@ interface Props {
   leftInfo?: CreditLink[];
   rightInfo?: CreditLink | null;
   children?: ReactNode;
+  estimatedLuminance?: number;
 }
 
 const BaseBackground: FC<Props> = ({
@@ -47,51 +41,15 @@ const BaseBackground: FC<Props> = ({
   leftInfo = [],
   rightInfo = null,
   children,
+  estimatedLuminance = 0.5,
 }) => {
-  // TODO: Consider passing display in via prop
-  const focus = useValue(db, "focus");
-  const background = useValue(db, "background");
-  const {
-    blur,
-    luminosity = 0,
-    nightDim,
-    scale = true,
-    position,
-  } = background.display;
-  const isNight = useIsNight();
-
-  const backdropStyle: CSSProperties = {};
-
-  if (blur && !focus) {
-    backdropStyle.filter = `blur(${blur}px)`;
-    backdropStyle.transform = `scale(${blur / 500 + 1})`;
-  }
-
-  if (!focus) {
-    if (nightDim && isNight) {
-      backdropStyle.opacity = (luminosity + 1) / 2;
-    } else {
-      backdropStyle.opacity = 1 - Math.abs(luminosity);
-    }
-  }
-
-  if (scale) {
-    backdropStyle.backgroundSize = "cover";
-  } else {
-    backdropStyle.backgroundSize = "contain";
-    backdropStyle.backgroundRepeat = "no-repeat";
-  }
-
-  if (position) {
-    backdropStyle.backgroundPosition = position;
-  }
+  const { backdropStyle, baseColor, effectiveLuminance, owner } =
+    useBackdropPresentation(estimatedLuminance);
+  usePublishBackgroundAppearance(owner, effectiveLuminance);
 
   return (
     <div className={`${containerClassName} bg-base`}>
-      <div
-        className="fullscreen"
-        style={{ backgroundColor: luminosity > 0 ? "white" : "black" }}
-      >
+      <div className="fullscreen" style={{ backgroundColor: baseColor }}>
         <CrossFade contentKey={url || ""} timeout={2500}>
           <div
             className="image fullscreen"

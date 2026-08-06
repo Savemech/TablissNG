@@ -283,6 +283,49 @@ const Background: FC = () => {
               </>
             </ToggleSection>
           )}
+
+          <ToggleSection
+            name={intl.formatMessage({
+              id: "backgrounds.readability",
+              defaultMessage: "Automatic readability",
+              description: "Automatic background text readability section",
+            })}
+          >
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={data.display.autoTextContrast ?? true}
+                  onChange={(event) =>
+                    setBackgroundDisplay({
+                      autoTextContrast: event.target.checked,
+                    })
+                  }
+                />{" "}
+                <FormattedMessage
+                  id="backgrounds.autoTextContrast"
+                  defaultMessage="Choose black or white text for the background"
+                  description="Automatic widget text contrast setting"
+                />
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={data.display.autoTextOutline ?? true}
+                  onChange={(event) =>
+                    setBackgroundDisplay({
+                      autoTextOutline: event.target.checked,
+                    })
+                  }
+                />{" "}
+                <FormattedMessage
+                  id="backgrounds.autoTextOutline"
+                  defaultMessage="Add the opposite outline automatically"
+                  description="Automatic widget text outline setting"
+                />
+              </label>
+            </>
+          </ToggleSection>
         </div>
       )}
     </div>

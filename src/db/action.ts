@@ -14,6 +14,8 @@ export const setBackground = (key: string): void => {
   const current = DB.get(db, "background");
 
   const defaultDisplay: BackgroundDisplay = {
+    autoTextContrast: true,
+    autoTextOutline: true,
     blur: 0,
     luminosity: -0.2,
     nightDim: false,

@@ -24,6 +24,7 @@ const config: Config = {
   description: messages.description,
   dashboardComponent: Daypart,
   settingsComponent: DaypartSettings,
+  supportsBackdrop: true,
   defaultData,
 };
 

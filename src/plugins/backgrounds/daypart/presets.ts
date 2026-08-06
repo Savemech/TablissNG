@@ -1,4 +1,7 @@
+import { relativeLuminance } from "../../../backgroundAppearance";
 import type { Daypart } from "./model";
+
+export { relativeLuminance } from "../../../backgroundAppearance";
 
 export type DaypartPreset = {
   id: string;
@@ -7,21 +10,6 @@ export type DaypartPreset = {
   backgroundImage: string;
   luminance: number;
 };
-
-function linearChannel(channel: number): number {
-  const value = channel / 255;
-  return value <= 0.04045
-    ? value / 12.92
-    : Math.pow((value + 0.055) / 1.055, 2.4);
-}
-
-export function relativeLuminance(hex: string): number {
-  const normalized = /^#[0-9a-f]{6}$/i.test(hex) ? hex.slice(1) : "000000";
-  const red = linearChannel(Number.parseInt(normalized.slice(0, 2), 16));
-  const green = linearChannel(Number.parseInt(normalized.slice(2, 4), 16));
-  const blue = linearChannel(Number.parseInt(normalized.slice(4, 6), 16));
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-}
 
 function preset(
   id: string,

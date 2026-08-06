@@ -55,6 +55,8 @@ export interface BackgroundState {
 }
 
 export interface BackgroundDisplay {
+  autoTextContrast?: boolean;
+  autoTextOutline?: boolean;
   luminosity?: number;
   blur?: number;
   nightDim?: boolean;
@@ -129,6 +131,8 @@ const initData: State = {
     id: "default-gradient",
     key: "background/gradient",
     display: {
+      autoTextContrast: true,
+      autoTextOutline: true,
       luminosity: -0.1,
       blur: 0,
       nightDim: false,

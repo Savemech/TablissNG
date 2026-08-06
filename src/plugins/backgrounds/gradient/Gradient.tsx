@@ -1,5 +1,9 @@
 import { FC, useEffect, useState } from "react";
 
+import {
+  relativeLuminance,
+  usePublishBackgroundAppearance,
+} from "../../../backgroundAppearance";
 import { defaultData, Props } from "./types";
 
 interface GradientData {
@@ -31,6 +35,17 @@ const Gradient: FC<Props> = ({ data = defaultData, setData }) => {
         });
     }
   }, [data.isRandom]);
+
+  const visibleColours =
+    data.isRandom && randomGradient
+      ? randomGradient.colors
+      : [data.from, data.to];
+  const luminance =
+    visibleColours.reduce(
+      (total, colour) => total + relativeLuminance(colour),
+      0,
+    ) / Math.max(1, visibleColours.length);
+  usePublishBackgroundAppearance("background/gradient", luminance);
 
   return (
     <div

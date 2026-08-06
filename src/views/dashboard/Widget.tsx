@@ -14,7 +14,7 @@ import { FormattedMessage } from "react-intl";
 
 import { setWidgetDisplay } from "../../db/action";
 import { db, WidgetDisplay } from "../../db/state";
-import { useKey } from "../../lib/db/react";
+import { useKey, useValue } from "../../lib/db/react";
 import { pluginMessages } from "../../locales/messages";
 import { parseFontFamilyAndFeatures } from "../../utils";
 import FloatingButton from "../shared/FloatingButton";
@@ -52,6 +52,9 @@ const Widget: FC<WidgetProps> = ({
 }) => {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [accent] = useKey(db, "accent") || ["#3498db"];
+  const background = useValue(db, "background");
+  const autoTextContrast = background.display.autoTextContrast ?? true;
+  const autoTextOutline = background.display.autoTextOutline ?? true;
 
   // Calculate pixel position from percentage
   // Uses "travel space" (viewport size - widget size) for better responsiveness
@@ -175,12 +178,20 @@ const Widget: FC<WidgetProps> = ({
 
   const styles: CSSProperties = {
     position: position === "free" ? "absolute" : "relative",
-    color: useAccentColor ? accent : colour,
+    color: useAccentColor
+      ? accent
+      : autoTextContrast
+        ? "var(--fdial-auto-text-color)"
+        : colour,
     fontFamily: parsedFont.family || fontFamily,
     fontSize: `${fontSize}px`,
     fontWeight,
     fontStyle,
     textDecoration,
+    textShadow:
+      autoTextOutline && !textOutline
+        ? "var(--fdial-auto-text-shadow)"
+        : undefined,
     ...parsedFont.style,
     // Only apply scale/rotation if NOT editing (moveable handles this during edit)
     transform: isEditingPosition
