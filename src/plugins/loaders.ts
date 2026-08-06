@@ -6,6 +6,7 @@ const loaders: Record<string, PluginLoader> = {
   "background/apod": () => import("./backgrounds/apod"),
   "background/bing": () => import("./backgrounds/bing"),
   "background/colour": () => import("./backgrounds/colour"),
+  "background/daypart": () => import("./backgrounds/daypart"),
   "background/giphy": () => import("./backgrounds/giphy"),
   "background/gradient": () => import("./backgrounds/gradient"),
   "background/image": () => import("./backgrounds/media"),

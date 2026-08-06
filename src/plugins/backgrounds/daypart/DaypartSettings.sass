@@ -1,0 +1,59 @@
+.DaypartSettings
+    &__group
+        margin: 0.9rem 0
+        padding: 0.65rem
+        border: 1px solid var(--border-main)
+        border-radius: 0.4rem
+
+        legend
+            padding: 0 0.3rem
+            font-weight: 600
+
+    &__start
+        display: flex !important
+        align-items: center
+        justify-content: space-between
+        gap: 0.75rem
+
+        input
+            width: auto !important
+
+    &__gallery
+        margin-top: 0.65rem
+        display: grid
+        grid-template-columns: repeat(3, minmax(0, 1fr))
+        gap: 0.45rem
+
+    &__preset
+        position: relative
+        min-height: 4.5rem
+        margin: 0 !important
+        padding: 0.4rem
+        display: flex !important
+        align-items: flex-end
+        overflow: hidden
+        border: 2px solid transparent
+        border-radius: 0.4rem
+        background-size: cover
+        cursor: pointer
+
+        &.is-selected
+            border-color: var(--accent-color)
+
+        input
+            position: absolute
+            top: 0.35rem
+            left: 0.35rem
+            width: auto !important
+
+        span
+            padding: 0.15rem 0.3rem
+            color: white
+            background: rgba(0, 0, 0, 0.52)
+            border-radius: 0.2rem
+            font-size: 0.75em
+            line-height: 1.2
+
+    @media (max-width: 430px)
+        &__gallery
+            grid-template-columns: 1fr 1fr
