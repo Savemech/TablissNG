@@ -494,6 +494,56 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       await expect(agendaSettings.getByLabel("OAuth redirect URL")).toHaveValue(
         /^https:\/\/.+\.chromiumapp\.org\/google-calendar$/,
       );
+
+      await page
+        .locator('select.primary:has(option[value="background/daypart"])')
+        .selectOption("background/daypart");
+      await expect(page.locator(".Daypart__surface")).toBeVisible();
+      const backgroundSettings = page.locator(".Settings .DaypartSettings");
+      await expect(
+        backgroundSettings.locator('input[type="radio"]'),
+      ).toHaveCount(12);
+
+      const currentMinute = await page.evaluate(() => {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+      });
+      const competingMinute =
+        currentMinute === 24 * 60 - 1 ? currentMinute - 1 : currentMinute + 1;
+      const asTime = (minute: number) =>
+        `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(
+          minute % 60,
+        ).padStart(2, "0")}`;
+      const setDaypartStarts = async (active: string) => {
+        for (const name of ["Morning", "Day", "Evening", "Night"]) {
+          const group = backgroundSettings.locator(".DaypartSettings__group", {
+            hasText: name,
+          });
+          await group
+            .locator('input[type="time"]')
+            .fill(asTime(name === active ? currentMinute : competingMinute));
+        }
+      };
+
+      await setDaypartStarts("Morning");
+      await backgroundSettings.locator('input[value="arctic-mint"]').check();
+      await expect(
+        page.locator('.Daypart__surface[data-daypart="morning"]').last(),
+      ).toBeVisible();
+      const dashboardWidget = page.locator(".Dashboard .Widget").first();
+      await expect(dashboardWidget).toHaveCSS("color", "rgb(16, 24, 39)");
+      await expect(dashboardWidget).toHaveCSS(
+        "text-shadow",
+        /rgba?\(255, 255, 255/,
+      );
+
+      await setDaypartStarts("Evening");
+      await backgroundSettings.locator('input[value="ember"]').check();
+      await expect(
+        page.locator('.Daypart__surface[data-daypart="evening"]').last(),
+      ).toBeVisible();
+      await expect(dashboardWidget).toHaveCSS("color", "rgb(248, 250, 252)");
+      await expect(dashboardWidget).toHaveCSS("text-shadow", /rgba?\(0, 0, 0/);
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),
