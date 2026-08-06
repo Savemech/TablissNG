@@ -58,4 +58,104 @@ test.describe("Background", () => {
 
     await expect(page.locator(".Background .Image")).toBeVisible();
   });
+
+  test("keeps the Daypart timeline, controls and config in sync", async ({
+    page,
+  }) => {
+    await selectBackground(page, "background/daypart");
+    const settings = page.locator(".DaypartSettings");
+    const morning = settings.locator("fieldset", { hasText: "Morning" });
+    const morningInput = morning.locator('input[type="time"]');
+    const morningHandle = settings.getByRole("slider", {
+      name: /Morning.*Starts at/,
+    });
+
+    await expect(morningInput).toHaveValue("06:00");
+    await morningInput.fill("08:15");
+    await expect(morningHandle).toHaveAttribute("aria-valuetext", "08:15");
+
+    const trackBounds = await settings
+      .locator(".DaypartTimeline__track")
+      .boundingBox();
+    const handleBounds = await morningHandle.boundingBox();
+    expect(trackBounds).not.toBeNull();
+    expect(handleBounds).not.toBeNull();
+    await page.mouse.move(
+      handleBounds!.x + handleBounds!.width / 2,
+      handleBounds!.y + handleBounds!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      trackBounds!.x + trackBounds!.width * (7.5 / 24),
+      trackBounds!.y + trackBounds!.height / 2,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+
+    const draggedTime = await morningInput.inputValue();
+    // Firefox rounds the fractional target x to a device pixel, which can
+    // select the adjacent five-minute step on this narrow timeline.
+    expect(draggedTime).toMatch(/^07:(25|30)$/);
+    await expect(morningHandle).toHaveAttribute("aria-valuetext", draggedTime);
+    await settings.locator("details").evaluate((details) => {
+      (details as HTMLDetailsElement).open = true;
+    });
+    await expect(settings.locator("textarea[readonly]")).toHaveValue(
+      new RegExp(`"morning": "${draggedTime}"`),
+    );
+  });
+
+  test("builds a solar Daypart schedule from a selected city", async ({
+    page,
+  }) => {
+    await page.route("https://geocoding-api.open-meteo.com/**", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          results: [
+            {
+              id: 2988507,
+              name: "Paris",
+              country: "France",
+              latitude: 48.8566,
+              longitude: 2.3522,
+              timezone: "Europe/Paris",
+            },
+          ],
+        }),
+      }),
+    );
+    await selectBackground(page, "background/daypart");
+    const settings = page.locator(".DaypartSettings");
+
+    await settings.getByText("Follow the sun", { exact: true }).click();
+    await settings.locator("#DaypartSettings__city").fill("Paris");
+    await settings.locator("#DaypartSettings__city").press("Enter");
+    await settings
+      .locator(".DaypartSettings__location-results button", {
+        hasText: "Paris, France",
+      })
+      .click();
+
+    await expect(
+      settings.locator(".DaypartSettings__solar-state--ready"),
+    ).toContainText("Paris, France");
+    await expect(
+      settings.locator(".DaypartTimeline__solar-legend", {
+        hasText: "Sunset",
+      }),
+    ).toBeVisible();
+    const evening = settings.locator("fieldset", { hasText: "Evening" });
+    await expect(evening.locator('input[type="number"]')).toHaveValue("-60");
+    await expect(evening.locator("output strong")).toHaveText(/^\d{2}:\d{2}$/);
+
+    await settings.locator("details").evaluate((details) => {
+      (details as HTMLDetailsElement).open = true;
+    });
+    const config = settings.locator("textarea[readonly]");
+    await expect(config).toHaveValue(/"scheduleMode": "solar"/);
+    await expect(config).toHaveValue(/"event": "sunset"/);
+    await expect(config).toHaveValue(/"offsetMinutes": -60/);
+    await expect(config).toHaveValue(/"timeZone": "Europe\/Paris"/);
+  });
 });
