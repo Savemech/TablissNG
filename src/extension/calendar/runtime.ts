@@ -1,18 +1,18 @@
 import { getCalendarFeedCache, putCalendarFeedCache } from "./cacheStore";
 import { getCalendarFeeds } from "./feedStore";
+import { refreshGoogleCalendarFeed } from "./googleRuntime";
 import { parseICalendar } from "./ical";
-import type { CalendarFeedCache, ICalFeed } from "./types";
+import type {
+  CalendarFeed,
+  CalendarFeedCache,
+  CalendarRefreshResult,
+  ICalFeed,
+} from "./types";
 
 const MAX_ICAL_BYTES = 4 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
 const PAST_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
 const FUTURE_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
-
-export type CalendarRefreshResult = {
-  feedId: string;
-  eventCount: number;
-  status: "cached" | "ready";
-};
 
 function safeError(cause: unknown): string {
   return cause instanceof Error ? cause.message : "Calendar refresh failed";
@@ -79,7 +79,7 @@ async function fetchCalendar(
   }
 }
 
-export async function refreshCalendarFeed(
+async function refreshICalFeed(
   feed: ICalFeed,
   force = false,
 ): Promise<CalendarRefreshResult> {
@@ -152,6 +152,15 @@ export async function refreshCalendarFeed(
     });
     throw cause;
   }
+}
+
+export async function refreshCalendarFeed(
+  feed: CalendarFeed,
+  force = false,
+): Promise<CalendarRefreshResult> {
+  return feed.kind === "google"
+    ? refreshGoogleCalendarFeed(feed, force)
+    : refreshICalFeed(feed, force);
 }
 
 export async function refreshCalendarFeedById(

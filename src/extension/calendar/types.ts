@@ -9,7 +9,26 @@ export type ICalFeed = {
   timeZone: string;
 };
 
-export type CalendarFeed = ICalFeed;
+export type GoogleCalendarFeed = {
+  id: string;
+  kind: "google";
+  name: string;
+  calendarId: string;
+  colour: string;
+  enabled: boolean;
+  refreshMinutes: number;
+  timeZone: string;
+};
+
+export type CalendarFeed = ICalFeed | GoogleCalendarFeed;
+
+export type GoogleCalendarInfo = {
+  id: string;
+  name: string;
+  colour: string;
+  timeZone: string;
+  primary: boolean;
+};
 
 export type AgendaEvent = {
   id: string;
@@ -41,4 +60,10 @@ export type ParsedCalendar = {
   name?: string;
   events: AgendaEvent[];
   truncated: boolean;
+};
+
+export type CalendarRefreshResult = {
+  feedId: string;
+  eventCount: number;
+  status: "cached" | "ready";
 };

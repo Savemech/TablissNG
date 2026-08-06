@@ -7,6 +7,7 @@ declare global {
   const UNSPLASH_API_KEY: string;
   const NASA_API_KEY: string;
   const TRELLO_API_KEY: string;
+  const GOOGLE_CALENDAR_CLIENT_ID: string;
   const VERSION: string;
   const browser: Browser;
 }

@@ -5,19 +5,25 @@ const MAX_FEEDS = 20;
 
 function isCalendarFeed(value: unknown): value is CalendarFeed {
   if (!value || typeof value !== "object") return false;
-  const feed = value as Partial<CalendarFeed>;
-  return (
-    feed.kind === "ical" &&
+  const feed = value as Record<string, unknown>;
+  const common =
     typeof feed.id === "string" &&
     feed.id.length > 0 &&
     typeof feed.name === "string" &&
-    typeof feed.url === "string" &&
     typeof feed.colour === "string" &&
     typeof feed.enabled === "boolean" &&
     typeof feed.refreshMinutes === "number" &&
     Number.isFinite(feed.refreshMinutes) &&
     typeof feed.timeZone === "string" &&
-    feed.timeZone.length > 0
+    feed.timeZone.length > 0;
+  if (!common) return false;
+  if (feed.kind === "ical") {
+    return typeof feed.url === "string" && feed.url.length > 0;
+  }
+  return (
+    feed.kind === "google" &&
+    typeof feed.calendarId === "string" &&
+    feed.calendarId.length > 0
   );
 }
 

@@ -121,10 +121,12 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
     setWorkingId(feed.id);
     setError(undefined);
     try {
-      const granted = await requestFeedPermission(feed.url);
-      if (!granted) {
-        setError(intl.formatMessage(messages.permissionError));
-        return;
+      if (feed.kind === "ical") {
+        const granted = await requestFeedPermission(feed.url);
+        if (!granted) {
+          setError(intl.formatMessage(messages.permissionError));
+          return;
+        }
       }
       const response = (await browser.runtime.sendMessage({
         type: REFRESH_CALENDAR_FEED,
@@ -185,7 +187,9 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
 
   const updateFeed = async (
     feed: CalendarFeed,
-    patch: Partial<CalendarFeed>,
+    patch: Partial<
+      Pick<CalendarFeed, "enabled" | "refreshMinutes" | "timeZone">
+    >,
   ) => {
     await persist(
       feeds.map((candidate) =>
@@ -328,7 +332,9 @@ const AgendaSettings: FC<Props> = ({ data = defaultData, setData }) => {
             />
             <span className="AgendaSettings__feed-name">
               <strong>{feed.name}</strong>
-              <small>{hostLabel(feed.url)}</small>
+              <small>
+                {feed.kind === "ical" ? hostLabel(feed.url) : "Google Calendar"}
+              </small>
             </span>
             <label>
               <input
