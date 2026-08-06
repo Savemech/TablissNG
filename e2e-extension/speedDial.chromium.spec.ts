@@ -3,6 +3,12 @@ import path from "node:path";
 
 import { chromium, expect, test } from "@playwright/test";
 
+import {
+  expandWidgetSettings,
+  openSettings,
+  widgetSettingsFieldset,
+} from "../e2e/helpers";
+
 test("Speed Dial works in the installed Chromium extension", async () => {
   const extensionPath = path.resolve("dist/chromium");
   const context = await chromium.launchPersistentContext("", {
@@ -192,6 +198,7 @@ test("Speed Dial works in the installed Chromium extension", async () => {
     const calendarPart = (type: Intl.DateTimeFormatPartTypes) =>
       calendarDateParts.find((part) => part.type === type)?.value ?? "";
     const calendarDay = `${calendarPart("year")}${calendarPart("month")}${calendarPart("day")}`;
+    const calendarIsoDay = `${calendarPart("year")}-${calendarPart("month")}-${calendarPart("day")}`;
     const calendarDate = new Date(
       Date.UTC(
         Number(calendarPart("year")),
@@ -202,6 +209,9 @@ test("Speed Dial works in the installed Chromium extension", async () => {
     const nextCalendarDay = `${calendarDate.getUTCFullYear()}${String(
       calendarDate.getUTCMonth() + 1,
     ).padStart(2, "0")}${String(calendarDate.getUTCDate()).padStart(2, "0")}`;
+    const nextCalendarIsoDay = `${calendarDate.getUTCFullYear()}-${String(
+      calendarDate.getUTCMonth() + 1,
+    ).padStart(2, "0")}-${String(calendarDate.getUTCDate()).padStart(2, "0")}`;
     const calendarBody = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
@@ -382,6 +392,108 @@ test("Speed Dial works in the installed Chromium extension", async () => {
         eventCount: 1,
       });
       expect(calendarRequests).toBe(1);
+
+      let googleCalendarRequests = 0;
+      const googleAuthorization: string[] = [];
+      await context.route(
+        "https://www.googleapis.com/calendar/v3/**",
+        async (route) => {
+          googleCalendarRequests += 1;
+          googleAuthorization.push(
+            (await route.request().allHeaders()).authorization ?? "",
+          );
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              etag: '"e2e-google-v1"',
+              items: [
+                {
+                  id: "google-planning",
+                  status: "confirmed",
+                  summary: "Google E2E Planning",
+                  start: { date: calendarIsoDay },
+                  end: { date: nextCalendarIsoDay },
+                  htmlLink: "https://calendar.google.com/event?eid=e2e",
+                },
+              ],
+            }),
+          });
+        },
+      );
+      await page.evaluate(async () => {
+        await chrome.storage.local.set({
+          "fdial/calendar/feeds": [
+            {
+              id: "e2e-google-calendar",
+              kind: "google",
+              name: "Google E2E",
+              calendarId: "e2e@example.com",
+              colour: "#4285f4",
+              enabled: true,
+              refreshMinutes: 30,
+              timeZone: "Europe/Madrid",
+            },
+          ],
+          "fdial/calendar/google-auth-config": {
+            clientId: "e2e.apps.googleusercontent.com",
+          },
+          "fdial/calendar/google-token": {
+            accessToken: "e2e-access-token",
+            expiresAt: Date.now() + 60 * 60 * 1000,
+          },
+        });
+      });
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            chrome.runtime.sendMessage({
+              type: "fdial/calendar/refresh-feed",
+              feedId: "e2e-google-calendar",
+              force: true,
+            }),
+          ),
+        )
+        .toEqual({
+          ok: true,
+          status: "calendar-ready",
+          feedId: "e2e-google-calendar",
+          eventCount: 1,
+        });
+      await expect(page.locator(".Agenda__event-title")).toHaveText(
+        "Google E2E Planning",
+      );
+      expect(googleCalendarRequests).toBe(1);
+      expect(googleAuthorization).toEqual(["Bearer e2e-access-token"]);
+
+      await expect(
+        page.evaluate(() =>
+          chrome.runtime.sendMessage({
+            type: "fdial/calendar/refresh-feed",
+            feedId: "e2e-google-calendar",
+          }),
+        ),
+      ).resolves.toEqual({
+        ok: true,
+        status: "calendar-cached",
+        feedId: "e2e-google-calendar",
+        eventCount: 1,
+      });
+      expect(googleCalendarRequests).toBe(1);
+
+      await page.evaluate(() =>
+        chrome.storage.local.set({ "fdial/calendar/feeds": [] }),
+      );
+      await openSettings(page);
+      await expandWidgetSettings(page, "Agenda");
+      const agendaSettings = widgetSettingsFieldset(page, "Agenda");
+      await expect(agendaSettings).toContainText("Read-only access only");
+      await expect(
+        agendaSettings.getByLabel("Google OAuth client ID"),
+      ).toBeVisible();
+      await expect(agendaSettings.getByLabel("OAuth redirect URL")).toHaveValue(
+        /^https:\/\/.+\.chromiumapp\.org\/google-calendar$/,
+      );
     } finally {
       await new Promise<void>((resolve, reject) =>
         uiIconServer.close((error) => (error ? reject(error) : resolve())),
