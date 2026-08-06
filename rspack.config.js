@@ -10,6 +10,8 @@ const { ReactRefreshRspackPlugin } = require("@rspack/plugin-react-refresh");
 const buildTarget = process.env.BUILD_TARGET || "web";
 const isProduction = process.env.NODE_ENV === "production";
 const isWeb = buildTarget === "web";
+const grantOptionalPermissionsForE2E =
+  process.env.E2E_GRANT_OPTIONAL_PERMISSIONS === "true";
 const { version } = require("./package.json");
 
 const config = {
@@ -106,6 +108,21 @@ const config = {
                 // In development, remove background service worker.
                 // Workbox generates it only in production, and including it in dev breaks Chromium.
                 delete manifest.background;
+              }
+              if (
+                grantOptionalPermissionsForE2E &&
+                manifest.optional_permissions
+              ) {
+                // Browser permission prompts live outside the page DOM and
+                // cannot be driven by Playwright. Promote them only in the
+                // isolated extension E2E build so the real grid can be tested.
+                manifest.permissions = [
+                  ...new Set([
+                    ...(manifest.permissions ?? []),
+                    ...manifest.optional_permissions,
+                  ]),
+                ];
+                delete manifest.optional_permissions;
               }
               // Update version so that I don't have to update it manually in each manifest file for releases.
               manifest.version = version;

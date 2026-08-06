@@ -22,6 +22,7 @@ import palette from "./palette";
 import quote from "./quote";
 import search from "./search";
 import since from "./since";
+import speedDial from "./speedDial";
 import tallyCounter from "./tallyCounter";
 import time from "./time";
 import timeTracker from "./timeTracker";
@@ -65,6 +66,7 @@ if (BUILD_TARGET === "web") {
   widgetConfigs.push(js);
 }
 if (BUILD_TARGET != "web" && BUILD_TARGET != "safari") {
+  widgetConfigs.push(speedDial);
   widgetConfigs.push(topSites);
   widgetConfigs.push(bookmarks);
   widgetConfigs.push(trello);

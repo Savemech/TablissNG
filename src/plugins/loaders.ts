@@ -46,6 +46,7 @@ if (BUILD_TARGET === "web") {
 
 if (BUILD_TARGET !== "web" && BUILD_TARGET !== "safari") {
   loaders["widget/bookmarks"] = () => import("./widgets/bookmarks");
+  loaders["widget/speedDial"] = () => import("./widgets/speedDial");
   loaders["widget/topSites"] = () => import("./widgets/topSites");
   loaders["widget/trello"] = () => import("./widgets/trello");
 }

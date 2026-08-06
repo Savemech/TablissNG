@@ -124,10 +124,12 @@ export type WidgetPosition =
 // Init data for the store
 const initData: State = {
   background: {
-    id: "default-unsplash",
-    key: "background/unsplash",
+    // Keep first launch fully offline. Network-backed galleries remain
+    // available, but must be an explicit user choice.
+    id: "default-gradient",
+    key: "background/gradient",
     display: {
-      luminosity: -0.2,
+      luminosity: -0.1,
       blur: 0,
       nightDim: false,
       scale: true,
@@ -167,6 +169,17 @@ const initData: State = {
   },
   accent: "#3498db",
 };
+
+if (BUILD_TARGET !== "web" && BUILD_TARGET !== "safari") {
+  initData["widget/default-speed-dial"] = {
+    id: "default-speed-dial",
+    key: "widget/speedDial",
+    order: 2,
+    display: {
+      position: "bottomCentre",
+    },
+  };
+}
 
 // Database storage
 export const db = DB.init<State>(initData);
