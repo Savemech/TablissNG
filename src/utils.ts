@@ -1,5 +1,4 @@
 import { addIcon, loadIcon } from "@iconify/react";
-import tlds from "tlds";
 
 export const SECONDS = 1000;
 export const MINUTES = 60 * SECONDS;
@@ -210,51 +209,4 @@ export function selectUnit(from: number, to: number) {
 export function wrap(cursor: number, length: number): number {
   if (length <= 0) return 0;
   return ((cursor % length) + length) % length;
-}
-
-/**
- * Normalizes a URL by adding https:// if it's a valid TLD and no scheme is present.
- * @param url The URL to normalize
- * @returns The normalized URL
- */
-export function normalizeUrl(url: string): string {
-  const trimmed = url.trim();
-
-  // If the string already contains any scheme (e.g. "http:", "https:",
-  // "mailto:", "file:", "ftp:", etc.), return as-is.
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
-    return trimmed;
-  }
-
-  try {
-    const urlObj = new URL(`https://${trimmed}`);
-    const hostname = urlObj.hostname.toLowerCase();
-    const parts = hostname.split(".");
-    const actualTld = parts[parts.length - 1];
-    if (parts.length > 1 && actualTld && tlds.includes(actualTld)) {
-      return `https://${trimmed}`;
-    }
-  } catch {
-    // return the original URL as is (trimmed)
-  }
-
-  return trimmed;
-}
-
-export function isSpecialUrl(url: string): boolean {
-  const s = (url || "").toLowerCase();
-  // This is not exhaustive, but covers the main cases, the checkbox can be used if its not automatically detected.
-  const prefixes = [
-    "about:",
-    "chrome:",
-    "edge:",
-    "vivaldi:",
-    "opera:",
-    "file:",
-    "chrome-extension:",
-    "moz-extension:",
-    "ms-settings:",
-    "view-source:",
-  ];
-  return prefixes.some((p) => s.startsWith(p));
 }

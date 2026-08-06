@@ -3,8 +3,7 @@ import "./Slot.sass";
 import type { FC } from "react";
 
 import { WidgetPosition, WidgetState } from "../../db/state";
-import { getConfig } from "../../plugins";
-import Plugin from "../shared/Plugin";
+import LazyPlugin from "../shared/LazyPlugin";
 import Widget from "./Widget";
 
 type Props = {
@@ -15,14 +14,9 @@ type Props = {
 const Slot: FC<Props> = ({ position, widgets }) => (
   <div className={`Slot ${position}`}>
     {widgets.map(({ display, id, key }) => {
-      const config = getConfig(key);
       return (
         <Widget key={id} id={id} {...display}>
-          <Plugin
-            id={id}
-            component={config.dashboardComponent}
-            defaultData={config.defaultData}
-          />
+          <LazyPlugin id={id} pluginKey={key} />
         </Widget>
       );
     })}

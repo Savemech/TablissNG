@@ -1,6 +1,6 @@
 import tlds from "tlds";
 
-import { isSpecialUrl } from "../../../utils";
+import { isSpecialUrl } from "../../../utils/url";
 import { engines } from "./engines";
 import { SEARCH_ENGINE_CUSTOM } from "./types";
 

@@ -3,7 +3,7 @@ import { withErrorBoundary } from "react-error-boundary";
 
 import { capture as captureException } from "../../errorHandler";
 import { useApi } from "../../hooks";
-import { API } from "../../plugins";
+import type { API } from "../../plugins/types";
 import Crashed from "./Crashed";
 
 type Props = {

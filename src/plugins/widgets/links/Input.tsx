@@ -6,7 +6,8 @@ import type { ChangeEvent } from "react";
 import { FC, useEffect, useRef, useState } from "react";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 
-import { addIconData, normalizeUrl } from "../../../utils";
+import { addIconData } from "../../../utils";
+import { normalizeUrl } from "../../../utils/url";
 import {
   DownIcon,
   IconButton,

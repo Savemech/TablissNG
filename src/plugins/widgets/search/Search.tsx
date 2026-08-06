@@ -10,7 +10,7 @@ import { FC, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
 import { useKeyPress } from "../../../hooks";
-import { isSpecialUrl } from "../../../utils";
+import { isSpecialUrl } from "../../../utils/url";
 import {
   getSuggestions,
   getWikipediaSuggestions,

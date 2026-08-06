@@ -1,4 +1,11 @@
-import { type FC, useContext, useEffect, useState } from "react";
+import {
+  type FC,
+  lazy,
+  Suspense,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { defineMessages, useIntl } from "react-intl";
 
 import { usePushError } from "../api";
@@ -9,9 +16,10 @@ import { useFavicon, useSystemTheme } from "../hooks";
 import { Stream } from "../lib";
 import { useValue } from "../lib/db/react";
 import Dashboard from "./dashboard";
-import { Settings } from "./settings";
 import Errors from "./shared/Errors";
 import StoreError from "./shared/StoreError";
+
+const Settings = lazy(() => import("./settings/Settings"));
 
 const messages = defineMessages({
   pageTitle: {
@@ -133,7 +141,11 @@ const Root: FC = () => {
   return (
     <>
       {ready ? <Dashboard /> : null}
-      {ready && settings ? <Settings /> : null}
+      {ready && settings ? (
+        <Suspense fallback={null}>
+          <Settings />
+        </Suspense>
+      ) : null}
       {errors ? <Errors onClose={toggleErrors} /> : null}
       {error ? <StoreError onClose={() => setError(false)} /> : null}
     </>

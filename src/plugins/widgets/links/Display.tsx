@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import { type FC, type MouseEvent, useMemo } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
-import { isSpecialUrl, normalizeUrl } from "../../../utils";
+import { isSpecialUrl, normalizeUrl } from "../../../utils/url";
 import { Cache, Link } from "./types";
 
 const getDomain = (url: string): string | null => {

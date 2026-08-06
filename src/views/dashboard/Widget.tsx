@@ -2,7 +2,9 @@ import { Icon } from "@iconify/react";
 import {
   type CSSProperties,
   type FC,
+  lazy,
   type ReactNode,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -16,7 +18,8 @@ import { useKey } from "../../lib/db/react";
 import { pluginMessages } from "../../locales/messages";
 import { parseFontFamilyAndFeatures } from "../../utils";
 import FloatingButton from "../shared/FloatingButton";
-import MoveableWrapper from "./MoveableWrapper";
+
+const MoveableWrapper = lazy(() => import("./MoveableWrapper"));
 
 interface WidgetProps extends WidgetDisplay {
   id: string;
@@ -247,15 +250,17 @@ const Widget: FC<WidgetProps> = ({
     <>
       {renderContent()}
       {position === "free" && isEditingPosition && (
-        <MoveableWrapper
-          targetRef={widgetRef}
-          isEditing={isEditingPosition}
-          scale={scale}
-          rotation={rotation}
-          x={offset.x}
-          y={offset.y}
-          onTransformEnd={handleTransformEnd}
-        />
+        <Suspense fallback={null}>
+          <MoveableWrapper
+            targetRef={widgetRef}
+            isEditing={isEditingPosition}
+            scale={scale}
+            rotation={rotation}
+            x={offset.x}
+            y={offset.y}
+            onTransformEnd={handleTransformEnd}
+          />
+        </Suspense>
       )}
       {isEditingPosition && (
         <FloatingButton onClick={handleSave}>

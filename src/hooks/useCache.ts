@@ -1,6 +1,6 @@
 import { EffectCallback, useEffect, useMemo, useRef } from "react";
 
-import { Cache } from "../plugins";
+import type { Cache } from "../plugins/types";
 import { wrap } from "../utils";
 import { useTime } from "./useTime";
 
