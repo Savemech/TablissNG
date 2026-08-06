@@ -14,8 +14,11 @@ const { version } = require("./package.json");
 
 const config = {
   performance: {
-    maxEntrypointSize: 1024000,
-    maxAssetSize: 1024000,
+    // Keep the new-tab critical path small as features are added. Plugin and
+    // settings chunks are intentionally lazy and are not part of this budget.
+    hints: isProduction ? "error" : false,
+    maxEntrypointSize: 512 * 1024,
+    maxAssetSize: 1024 * 1024,
   },
   lazyCompilation: false,
   entry: {
