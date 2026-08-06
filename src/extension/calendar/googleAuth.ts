@@ -5,6 +5,11 @@ export const GOOGLE_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 ] as const;
 
+export const GOOGLE_CALENDAR_PERMISSION_ORIGINS = [
+  "https://www.googleapis.com/*",
+  "https://oauth2.googleapis.com/*",
+] as const;
+
 const CONFIG_KEY = "fdial/calendar/google-auth-config";
 const TOKEN_KEY = "fdial/calendar/google-token";
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -144,7 +149,7 @@ export function compiledGoogleClientId(): string {
 
 export async function configuredGoogleClientId(): Promise<string> {
   const config = await getConfig();
-  return config?.clientId || GOOGLE_CALENDAR_CLIENT_ID;
+  return GOOGLE_CALENDAR_CLIENT_ID || config?.clientId || "";
 }
 
 export async function saveGoogleClientId(clientId: string): Promise<void> {

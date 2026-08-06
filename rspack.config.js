@@ -12,7 +12,12 @@ const isProduction = process.env.NODE_ENV === "production";
 const isWeb = buildTarget === "web";
 const grantOptionalPermissionsForE2E =
   process.env.E2E_GRANT_OPTIONAL_PERMISSIONS === "true";
-const googleCalendarClientId = process.env.GOOGLE_CALENDAR_CLIENT_ID || "";
+const googleCalendarClientId =
+  buildTarget === "chromium"
+    ? process.env.GOOGLE_CALENDAR_CLIENT_ID || ""
+    : buildTarget === "firefox"
+      ? process.env.GOOGLE_CALENDAR_FIREFOX_CLIENT_ID || ""
+      : "";
 const { version } = require("./package.json");
 
 const entry = {

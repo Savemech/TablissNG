@@ -142,7 +142,16 @@ GIPHY_API_KEY=your_key_here
 UNSPLASH_API_KEY=your_key_here
 NASA_API_KEY=your_key_here
 TRELLO_API_KEY=your_key_here # this requires the correct redirect URI to be set up in your Trello app settings: https://53dad6be72180770ccc08f0a6e2fc8a64dcf7b42.extensions.allizom.org and https://dlaogejjiafeobgofajdlkkhjlignalk.chromiumapp.org should work for firefox and chromium respectively.
+GOOGLE_CALENDAR_CLIENT_ID=your_chromium_extension_oauth_client_id
+GOOGLE_CALENDAR_FIREFOX_CLIENT_ID=your_firefox_desktop_oauth_client_id
 ```
+
+The Agenda widget can use Google Calendar with read-only scopes. Chromium's
+client ID is embedded in the generated manifest and must be a Google Cloud
+Chrome Extension OAuth client associated with this extension ID. Firefox uses
+PKCE with a Desktop app client; when no Firefox client is compiled in, it can
+be entered locally in the widget settings. OAuth tokens and calendar data are
+kept in extension-local storage.
 
 ## Credits
 
