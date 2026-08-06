@@ -1,5 +1,6 @@
 import * as DB from "./db";
 import * as Stream from "./stream";
+import type Browser from "webextension-polyfill";
 
 /** IndexedDB storage provider */
 // TODO: clean up indexeddb usage, convert to promises and double check error handling
@@ -93,15 +94,16 @@ export const extension = async (
     });
 
   const storageArea = browser.storage[area];
+  const storagePrefix = `${name}/`;
 
   // Pull
   await storageArea
     .get()
     .then((stored) =>
       Object.keys(stored)
-        .filter((key) => key.startsWith(name))
+        .filter((key) => key.startsWith(storagePrefix))
         .forEach((key) =>
-          DB.put(db, key.substring(name.length + 1), stored[key]),
+          DB.put(db, key.substring(storagePrefix.length), stored[key]),
         ),
     )
     .catch((error) => {
@@ -113,60 +115,115 @@ export const extension = async (
   const handleError = (message: string) => (err: unknown) => {
     Stream.publish(errors, mapError(message, err));
   };
-  DB.listen(
-    db,
-    batch((changes) => {
-      if (DEV) console.log("Storage: saving changes:", changes);
+  const pendingWrites = batch((changes) => {
+    if (DEV) console.log("Storage: saving changes:", changes);
 
-      // TODO: test for both updates and deletes for the same key
-      // TODO: iterator helpers
-      const changesArray = Array.from(changes);
-      const updates = Object.fromEntries(
-        changesArray
-          .filter(([, val]) => val !== undefined)
-          .map(([key, val]) => [`${name}/${key}`, val]),
-      );
-      const deletes = changesArray
-        .filter(([, val]) => val === undefined)
-        .map(([key]) => `${name}/${key}`);
+    // TODO: test for both updates and deletes for the same key
+    // TODO: iterator helpers
+    const changesArray = Array.from(changes);
+    const updates = Object.fromEntries(
+      changesArray
+        .filter(([, val]) => val !== undefined)
+        .map(([key, val]) => [`${name}/${key}`, val]),
+    );
+    const deletes = changesArray
+      .filter(([, val]) => val === undefined)
+      .map(([key]) => `${name}/${key}`);
 
-      storageArea
-        .set(updates)
-        .catch(handleError("Cannot write updates to storage"));
-      storageArea
-        .remove(deletes)
-        .catch(handleError("Cannot write deletes to storage"));
-    }, SAVE_BATCH_TIMEOUT),
-  );
+    storageArea
+      .set(updates)
+      .catch(handleError("Cannot write updates to storage"));
+    storageArea
+      .remove(deletes)
+      .catch(handleError("Cannot write deletes to storage"));
+  }, SAVE_BATCH_TIMEOUT);
+  let applyingRemote = false;
+  DB.listen(db, (change) => {
+    if (!applyingRemote) pendingWrites(change);
+  });
+
+  const sameValue = (left: unknown, right: unknown): boolean => {
+    if (Object.is(left, right)) return true;
+    try {
+      return JSON.stringify(left) === JSON.stringify(right);
+    } catch {
+      return false;
+    }
+  };
+  const handleStorageChange = (
+    changes: Record<string, Browser.Storage.StorageChange>,
+    changedArea: string,
+  ) => {
+    if (changedArea !== area) return;
+
+    for (const [storageKey, change] of Object.entries(changes)) {
+      if (!storageKey.startsWith(storagePrefix)) continue;
+      const key = storageKey.substring(storagePrefix.length);
+      if (sameValue(DB.get(db, key), change.newValue)) continue;
+
+      // The browser has already resolved its sync conflict. A later remote
+      // event wins over an older local write still waiting in our 1s batch.
+      pendingWrites.discard(key);
+      applyingRemote = true;
+      try {
+        if (change.newValue === undefined) DB.del(db, key);
+        else DB.put(db, key, change.newValue);
+      } finally {
+        applyingRemote = false;
+      }
+    }
+  };
+  browser.storage.onChanged.addListener(handleStorageChange);
 
   return errors;
 };
 
-const batch = (
+export type BatchListener = DB.Listener & {
+  discard: (key: string) => void;
+  dispose: () => void;
+  flush: () => void;
+};
+
+export const batch = (
   flush: (batch: Iterable<DB.Change>) => void,
   timeout = 0,
-): DB.Listener => {
-  const changes = new Map();
+): BatchListener => {
+  const changes = new Map<string, DB.Val>();
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const run = () => {
+    if (changes.size === 0) {
+      timer = null;
+      return;
+    }
     flush(changes);
     changes.clear();
     timer = null;
   };
 
-  // If there are pending changes on browser close, flush immediately
-  window.addEventListener("beforeunload", () => {
-    if (timer) {
-      clearTimeout(timer);
-      run();
-    }
-  });
+  const flushNow = () => {
+    if (timer) clearTimeout(timer);
+    run();
+  };
 
-  return ([key, val]) => {
+  // If there are pending changes on browser close, flush immediately
+  const handleBeforeUnload = () => flushNow();
+  const windowTarget = typeof window === "undefined" ? undefined : window;
+  windowTarget?.addEventListener("beforeunload", handleBeforeUnload);
+
+  const listener = (([key, val]: DB.Change) => {
     changes.set(key, val);
     if (!timer) timer = setTimeout(run, timeout);
+  }) as BatchListener;
+  listener.discard = (key) => changes.delete(key);
+  listener.flush = flushNow;
+  listener.dispose = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    changes.clear();
+    windowTarget?.removeEventListener("beforeunload", handleBeforeUnload);
   };
+  return listener;
 };
 
 /** Storage Error */

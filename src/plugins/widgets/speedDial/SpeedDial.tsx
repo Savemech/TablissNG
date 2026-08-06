@@ -262,6 +262,15 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
 
   useEffect(() => {
     if (!tree) return;
+    // useBookmarks refreshes asynchronously. Never migrate a newly received
+    // root id using the previous render's tree.
+    if (
+      data.rootBookmarkId &&
+      !data.rootBookmarkSelector &&
+      tree.id !== data.rootBookmarkId
+    ) {
+      return;
+    }
     const migrateLayout = !data.portableLayout;
     const migrateRoot = Boolean(
       data.rootBookmarkId && !data.rootBookmarkSelector,

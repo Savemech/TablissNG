@@ -164,6 +164,30 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       "64px",
     );
 
+    // storage.sync updates are applied live and must not wait for another tab.
+    await page.evaluate(async () => {
+      const key = "tabliss/config/data/default-speed-dial";
+      const stored = await chrome.storage.sync.get(key);
+      await chrome.storage.sync.set({
+        [key]: { ...stored[key], tileSize: 80 },
+      });
+    });
+    await expect(page.locator(".SpeedDial__icon").first()).toHaveCSS(
+      "width",
+      "80px",
+    );
+    await page.evaluate(async () => {
+      const key = "tabliss/config/data/default-speed-dial";
+      const stored = await chrome.storage.sync.get(key);
+      await chrome.storage.sync.set({
+        [key]: { ...stored[key], tileSize: 64 },
+      });
+    });
+    await expect(page.locator(".SpeedDial__icon").first()).toHaveCSS(
+      "width",
+      "64px",
+    );
+
     const tile = (name: string) =>
       page.locator(".SpeedDial__tile", { hasText: name });
 
