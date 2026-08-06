@@ -1,10 +1,10 @@
-import { fetchFavicon, fetchManualIcon } from "./favicon/fetch";
-import { getFavicon, putFavicon } from "./favicon/store";
-import type { FaviconRecord } from "./favicon/types";
 import {
   refreshAllCalendarFeeds,
   refreshCalendarFeedById,
 } from "./calendar/runtime";
+import { fetchFavicon, fetchManualIcon } from "./favicon/fetch";
+import { getFavicon, putFavicon } from "./favicon/store";
+import type { FaviconRecord } from "./favicon/types";
 import {
   BACKGROUND_HEALTH,
   type BackgroundResponse,
@@ -12,8 +12,8 @@ import {
   FETCH_FAVICON,
   FETCH_FAVICON_BATCH,
   type FetchFaviconBatchMessage,
-  isFetchFaviconMessage,
   isFetchFaviconBatchMessage,
+  isFetchFaviconMessage,
   isRefreshAllCalendarsMessage,
   isRefreshCalendarFeedMessage,
   REFRESH_ALL_CALENDARS,

@@ -1,5 +1,5 @@
-import type { API } from "../../types";
 import type { AutomaticFaviconSource } from "../../../extension/favicon/types";
+import type { API } from "../../types";
 import { emptyLayout, type LayoutOverlay } from "./layout";
 
 export type Density = "compact" | "comfortable" | "spacious";

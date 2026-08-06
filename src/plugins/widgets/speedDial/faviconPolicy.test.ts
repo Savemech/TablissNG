@@ -1,10 +1,10 @@
-import { type BookmarkNode } from "./layout";
 import {
   faviconCandidates,
   faviconPermissionOrigins,
-  faviconTargets,
   type FaviconTarget,
+  faviconTargets,
 } from "./faviconPolicy";
+import { type BookmarkNode } from "./layout";
 
 const nodes: BookmarkNode[] = [
   { id: "public", title: "Public", url: "https://example.com/path" },
