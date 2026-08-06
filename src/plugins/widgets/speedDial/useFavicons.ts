@@ -1,10 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type Browser from "webextension-polyfill";
 
 import {
   deleteFavicon,
+  getFavicon,
   getFavicons,
   putFavicon,
 } from "../../../extension/favicon/store";
+import { normaliseFaviconForSync } from "../../../extension/favicon/normalise";
+import {
+  deleteSyncedFavicon,
+  getSyncedFavicons,
+  isSyncedFaviconStorageChange,
+  restoreSyncedFavicons,
+  saveSyncedFavicon,
+  syncedFaviconStorageKey,
+  type SyncedFaviconTarget,
+} from "../../../extension/favicon/sync";
 import type { FaviconRecord } from "../../../extension/favicon/types";
 import {
   type BackgroundResponse,
@@ -32,6 +44,7 @@ type FaviconState = {
 
 const BATCH_SIZE = 500;
 export const MAX_MANUAL_ICON_BYTES = 512 * 1024;
+const EMPTY_PORTABLE_KEYS = new Map<string, string>();
 
 function asError(cause: unknown): Error {
   return cause instanceof Error ? cause : new Error("Could not update icons");
@@ -64,6 +77,7 @@ export function useFavicons(
   targets: readonly FaviconTarget[],
   settings: FaviconSettings,
   automaticTargets: readonly FaviconTarget[] = targets,
+  portableKeys: ReadonlyMap<string, string> = EMPTY_PORTABLE_KEYS,
 ): FaviconState {
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<Error>();
@@ -84,6 +98,18 @@ export function useFavicons(
     .join("\u0001");
   const automaticTargetsKey = automaticTargets
     .map(({ bookmarkId, pageUrl }) => `${bookmarkId}\u0000${pageUrl}`)
+    .join("\u0001");
+  const syncedTargets = targets
+    .map((target): SyncedFaviconTarget | undefined => {
+      const portableKey = portableKeys.get(target.bookmarkId);
+      return portableKey ? { ...target, portableKey } : undefined;
+    })
+    .filter((target): target is SyncedFaviconTarget => Boolean(target));
+  const syncedTargetsKey = syncedTargets
+    .map(
+      ({ bookmarkId, pageUrl, portableKey }) =>
+        `${bookmarkId}\u0000${pageUrl}\u0000${portableKey}`,
+    )
     .join("\u0001");
 
   const replaceRecords = useCallback(
@@ -209,6 +235,19 @@ export function useFavicons(
           throw new Error(response?.error ?? "Could not fetch the custom icon");
         }
         await reload();
+        const portableKey = portableKeys.get(target.bookmarkId);
+        const record = await getFavicon(target.bookmarkId);
+        if (portableKey && record?.blob) {
+          try {
+            await saveSyncedFavicon(
+              portableKey,
+              await normaliseFaviconForSync(record.blob),
+              record.fetchedAt,
+            );
+          } catch (cause) {
+            setError(asError(cause));
+          }
+        }
         return response;
       } catch (cause) {
         const nextError = asError(cause);
@@ -216,7 +255,7 @@ export function useFavicons(
         return { ok: false, error: nextError.message };
       }
     },
-    [reload, settings.ttlDays],
+    [portableKeys, reload, settings.ttlDays],
   );
 
   const setFromUpload = useCallback(
@@ -232,6 +271,7 @@ export function useFavicons(
         throw new Error("The selected file is not an image");
       }
       await ensureRenderableImage(file);
+      const fetchedAt = Date.now();
       await putFavicon({
         bookmarkId: target.bookmarkId,
         pageUrl: canonicalUrl(target.pageUrl),
@@ -239,34 +279,94 @@ export function useFavicons(
         sourceUrl: file.name,
         status: "ready",
         blob: file.slice(0, file.size, file.type || "application/octet-stream"),
-        fetchedAt: Date.now(),
+        fetchedAt,
       });
       await reload();
+      const portableKey = portableKeys.get(target.bookmarkId);
+      if (portableKey) {
+        try {
+          await saveSyncedFavicon(
+            portableKey,
+            await normaliseFaviconForSync(file),
+            fetchedAt,
+          );
+        } catch (cause) {
+          setError(asError(cause));
+        }
+      }
     },
-    [reload],
+    [portableKeys, reload],
   );
 
   const removeIcon = useCallback(
     async (bookmarkId: string): Promise<void> => {
+      const deletedAt = Date.now();
       await deleteFavicon(bookmarkId);
       await reload();
+      const portableKey = portableKeys.get(bookmarkId);
+      if (portableKey) {
+        try {
+          await deleteSyncedFavicon(portableKey, deletedAt);
+        } catch (cause) {
+          setError(asError(cause));
+        }
+      }
     },
-    [reload],
+    [portableKeys, reload],
   );
 
   useEffect(() => {
     let active = true;
-    getFavicons(targetsRef.current.map(({ bookmarkId }) => bookmarkId))
-      .then((stored) => {
-        if (active) replaceRecords(stored);
-      })
-      .catch((cause: unknown) => {
-        if (active) setError(asError(cause));
-      });
+    const reconcile = async () => {
+      await restoreSyncedFavicons(syncedTargets);
+      const stored = await getFavicons(
+        targetsRef.current.map(({ bookmarkId }) => bookmarkId),
+      );
+      if (active) replaceRecords(stored);
+
+      // One-time migration for manual icons created before asset sync existed.
+      const remote = await getSyncedFavicons();
+      await Promise.all(
+        syncedTargets.map(async ({ bookmarkId, portableKey }) => {
+          const record = stored.get(bookmarkId);
+          if (
+            !record?.blob ||
+            (record.source !== "manual-upload" &&
+              record.source !== "manual-url")
+          ) {
+            return;
+          }
+          const synced = remote.get(syncedFaviconStorageKey(portableKey));
+          if (synced && synced.updatedAt >= record.fetchedAt) return;
+          await saveSyncedFavicon(
+            portableKey,
+            await normaliseFaviconForSync(record.blob),
+            record.fetchedAt,
+          );
+        }),
+      );
+    };
+
+    void reconcile().catch((cause: unknown) => {
+      if (active) setError(asError(cause));
+    });
+
+    const handleStorageChange = (
+      changes: Record<string, Browser.Storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area === "sync" && isSyncedFaviconStorageChange(changes)) {
+        void reconcile().catch((cause: unknown) => {
+          if (active) setError(asError(cause));
+        });
+      }
+    };
+    browser.storage.onChanged.addListener(handleStorageChange);
     return () => {
       active = false;
+      browser.storage.onChanged.removeListener(handleStorageChange);
     };
-  }, [replaceRecords, targetsKey]);
+  }, [replaceRecords, syncedTargetsKey, targetsKey]);
 
   useEffect(() => {
     if (settings.consent !== "enabled" || automaticTargets.length === 0) return;

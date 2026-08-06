@@ -326,6 +326,33 @@ test("Speed Dial works in the installed Chromium extension", async () => {
         buffer: icon,
       });
       await expect.poll(storedSource).toBe("manual-upload");
+      const syncedIconState = () =>
+        page.evaluate(async () => {
+          const stored = await chrome.storage.sync.get();
+          const entry = Object.entries(stored).find(([key]) =>
+            key.startsWith("fdial/sync/favicon/"),
+          );
+          const value = entry?.[1] as
+            { data?: string; deleted?: boolean; mimeType?: string } | undefined;
+          return {
+            count: Object.keys(stored).filter((key) =>
+              key.startsWith("fdial/sync/favicon/"),
+            ).length,
+            dataLength: value?.data?.length ?? 0,
+            deleted: value?.deleted === true,
+            mimeType: value?.mimeType ?? "",
+            error:
+              document.querySelector(".SpeedDial__inline-error")?.textContent ??
+              "",
+          };
+        });
+      await expect.poll(syncedIconState).toMatchObject({
+        count: 1,
+        deleted: false,
+        error: "",
+        mimeType: "image/webp",
+      });
+      expect((await syncedIconState()).dataLength).toBeGreaterThan(0);
 
       await editIcon.click();
       await page
@@ -338,6 +365,11 @@ test("Speed Dial works in the installed Chromium extension", async () => {
       await editIcon.click();
       await page.getByRole("button", { name: "Reset icon" }).click();
       await expect.poll(storedSource).toBe("direct");
+      await expect.poll(syncedIconState).toMatchObject({
+        count: 1,
+        dataLength: 0,
+        deleted: true,
+      });
       expect(uiIconRequests).toBe(2);
 
       const calendarUrl = `http://127.0.0.1:${address.port}/calendar.ics`;

@@ -26,7 +26,11 @@ import {
   moveItem,
 } from "./layout";
 import { createPortableFolderSelectorFromSubtree } from "./portableFolder";
-import { fromPortableLayout, toPortableLayout } from "./portableLayout";
+import {
+  fromPortableLayout,
+  indexPortableBookmarks,
+  toPortableLayout,
+} from "./portableLayout";
 import { defaultData, type Props } from "./types";
 import { useBookmarks } from "./useBookmarks";
 import { useFavicons } from "./useFavicons";
@@ -192,6 +196,10 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     () => (bookmarkIndex ? [...bookmarkIndex.nodes.values()] : []),
     [bookmarkIndex],
   );
+  const portableBookmarkIndex = useMemo(
+    () => (tree ? indexPortableBookmarks(tree) : undefined),
+    [tree],
+  );
   const faviconTargetList = useMemo(
     () => faviconTargets(bookmarkNodes, faviconSettings),
     [bookmarkNodes, faviconSettings.includeLocal, faviconSettings.source],
@@ -222,7 +230,12 @@ const SpeedDial: FC<Props> = ({ data = defaultData, setData }) => {
     removeIcon,
     setFromUpload,
     setFromUrl,
-  } = useFavicons(faviconCandidateList, faviconSettings, faviconTargetList);
+  } = useFavicons(
+    faviconCandidateList,
+    faviconSettings,
+    faviconTargetList,
+    portableBookmarkIndex?.keyById,
+  );
   const activePath = useMemo(() => {
     if (!tree || !bookmarkIndex) return [];
     if (path[0] !== tree.id) return [tree.id];
